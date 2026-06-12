@@ -1,0 +1,124 @@
+version: "3.1"
+
+nlu:
+  - intent: greet
+    examples: |
+      - hi
+      - hello
+      - hey
+      - good morning
+      - good evening
+      - hey there
+      - hello bot
+      - hi there
+      - greetings
+      - good afternoon
+
+  - intent: goodbye
+    examples: |
+      - bye
+      - goodbye
+      - see you
+      - see you later
+      - thanks bye
+      - catch you later
+      - talk to you later
+      - have a nice day
+
+  - intent: shipping_address_update
+    examples: |
+      - I want to change my shipping address
+      - I need to update my delivery address
+      - Change my address
+      - Update my shipping address
+      - Modify my delivery address
+      - I entered the wrong address
+      - I want to edit my shipping details
+      - Please change where my order will be delivered
+      - I need to change my address for my order
+      - Update the address for my package
+      - Change my address for order [ORD12345](order_id)
+      - Update shipping address for [ORD56789](order_id)
+      - Change my delivery address for [OD1001](order_id)
+      - I want to change my address for [ORDER999](order_id)
+      - Update my address for [ABC123](order_id)
+
+  - intent: provide_order_id
+    examples: |
+      - [ORD12345](order_id)
+      - My order ID is [ORD12345](order_id)
+      - The order number is [ORD56789](order_id)
+      - It is [OD1001](order_id)
+      - My order is [ABC123](order_id)
+      - Order ID [XYZ999](order_id)
+      - [ORDER2025](order_id)
+      - Use order [ORD88888](order_id)
+      - Please check [ORD11111](order_id)
+      - The ID is [ORD22222](order_id)
+
+  - intent: provide_new_address
+    examples: |
+      - 42 MG Road, Pune
+      - Change it to 221B Baker Street, London
+      - The new address is Sector 18, Noida
+      - Ship it to 12 Park Street, Kolkata
+      - Deliver it to MG Road, Bengaluru
+      - My new address is Flat 302, Green Residency, Hyderabad
+      - Please update it to Connaught Place, New Delhi
+      - Send it to Anna Nagar, Chennai
+      - Use Baner Road, Pune
+      - 45 Residency Road, Bengaluru
+
+  - intent: confirm
+    examples: |
+      - yes
+      - yes please
+      - confirm
+      - I confirm
+      - that's correct
+      - correct
+      - go ahead
+      - proceed
+      - okay
+      - sure
+      - do it
+      - update it
+
+  - intent: deny
+    examples: |
+      - no
+      - don't do it
+      - cancel
+      - stop
+      - never mind
+      - that's wrong
+      - not now
+      - I changed my mind
+      - abort
+      - no thanks
+
+  - intent: request_human
+    examples: |
+      - I want to talk to a human
+      - Connect me to an agent
+      - Let me speak with customer support
+      - I need a human representative
+      - Transfer me to an executive
+      - Can I talk to a real person
+      - I want customer care
+      - Connect me to support
+      - Human agent please
+      - Live agent
+
+  - intent: out_of_scope
+    examples: |
+      - Tell me a joke
+      - What's the weather today
+      - Who won the cricket match
+      - Play some music
+      - Open YouTube
+      - What is AI
+      - How are you
+      - Who is the prime minister
+      - Write a poem
+      - Solve my math homework
