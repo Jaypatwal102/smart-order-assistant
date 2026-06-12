@@ -10,7 +10,6 @@ intents:
   - deny
   - request_human
   - out_of_scope
-  - nlu_fallback
 
 entities:
   - order_id
@@ -18,14 +17,13 @@ entities:
 slots:
   order_id:
     type: text
-    influence_conversation: false
     mappings:
       - type: from_entity
         entity: order_id
 
+  # We will store the entire user message as the address
   new_address:
     type: text
-    influence_conversation: false
     mappings:
       - type: from_text
         conditions:
@@ -63,13 +61,6 @@ responses:
   utter_out_of_scope:
     - text: "Sorry, I can only help with shipping address updates."
 
-  utter_default:
-    - text: "Sorry, I didn't understand that. Please rephrase your request."
-
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
-
-actions:
-  - action_submit_shipping_update
-  - action_cancel_shipping_update

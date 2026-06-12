@@ -1,6 +1,9 @@
 version: "3.1"
 
 nlu:
+  # -------------------------
+  # GREET
+  # -------------------------
   - intent: greet
     examples: |
       - hi
@@ -14,6 +17,9 @@ nlu:
       - greetings
       - good afternoon
 
+  # -------------------------
+  # GOODBYE
+  # -------------------------
   - intent: goodbye
     examples: |
       - bye
@@ -25,6 +31,9 @@ nlu:
       - talk to you later
       - have a nice day
 
+  # -------------------------
+  # SHIPPING ADDRESS UPDATE
+  # -------------------------
   - intent: shipping_address_update
     examples: |
       - I want to change my shipping address
@@ -42,7 +51,15 @@ nlu:
       - Change my delivery address for [OD1001](order_id)
       - I want to change my address for [ORDER999](order_id)
       - Update my address for [ABC123](order_id)
+      - Change my address for [ORD12345](order_id) to [42 MG Road, Pune](new_address)
+      - Update my delivery location to [221B Baker Street, London](new_address)
+      - Ship my package to [Sector 18, Noida](new_address)
+      - Change the address to [12 Park Street, Kolkata](new_address)
+      - I want my order delivered to [MG Road, Bengaluru](new_address)
 
+  # -------------------------
+  # PROVIDE ORDER ID
+  # -------------------------
   - intent: provide_order_id
     examples: |
       - [ORD12345](order_id)
@@ -56,19 +73,25 @@ nlu:
       - Please check [ORD11111](order_id)
       - The ID is [ORD22222](order_id)
 
+  # -------------------------
+  # PROVIDE NEW ADDRESS
+  # -------------------------
   - intent: provide_new_address
     examples: |
-      - 42 MG Road, Pune
-      - Change it to 221B Baker Street, London
-      - The new address is Sector 18, Noida
-      - Ship it to 12 Park Street, Kolkata
-      - Deliver it to MG Road, Bengaluru
-      - My new address is Flat 302, Green Residency, Hyderabad
-      - Please update it to Connaught Place, New Delhi
-      - Send it to Anna Nagar, Chennai
-      - Use Baner Road, Pune
-      - 45 Residency Road, Bengaluru
+      - [42 MG Road, Pune](new_address)
+      - Change it to [221B Baker Street, London](new_address)
+      - The new address is [Sector 18, Noida](new_address)
+      - Ship it to [12 Park Street, Kolkata](new_address)
+      - Deliver it to [MG Road, Bengaluru](new_address)
+      - My new address is [Flat 302, Green Residency, Hyderabad](new_address)
+      - Please update it to [Connaught Place, New Delhi](new_address)
+      - Send it to [Anna Nagar, Chennai](new_address)
+      - Use [Baner Road, Pune](new_address)
+      - [45 Residency Road, Bengaluru](new_address)
 
+  # -------------------------
+  # CONFIRM
+  # -------------------------
   - intent: confirm
     examples: |
       - yes
@@ -84,6 +107,9 @@ nlu:
       - do it
       - update it
 
+  # -------------------------
+  # DENY
+  # -------------------------
   - intent: deny
     examples: |
       - no
@@ -97,6 +123,9 @@ nlu:
       - abort
       - no thanks
 
+  # -------------------------
+  # REQUEST HUMAN AGENT
+  # -------------------------
   - intent: request_human
     examples: |
       - I want to talk to a human
@@ -110,6 +139,9 @@ nlu:
       - Human agent please
       - Live agent
 
+  # -------------------------
+  # OUT OF SCOPE
+  # -------------------------
   - intent: out_of_scope
     examples: |
       - Tell me a joke
