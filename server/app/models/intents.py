@@ -69,9 +69,11 @@ class IntentTrainingPhrase(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
-    intent_id: Mapped[uuid.UUID | None] = mapped_column(
+    intent_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("intents.intent_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     phrase_text: Mapped[str] = mapped_column(Text, nullable=False)
     language_code: Mapped[str] = mapped_column(
@@ -82,7 +84,8 @@ class IntentTrainingPhrase(Base):
     )
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        index=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -90,7 +93,7 @@ class IntentTrainingPhrase(Base):
         server_default=func.now(),
     )
 
-    intent: Mapped[Intent | None] = relationship(back_populates="training_phrases")
+    intent: Mapped[Intent] = relationship(back_populates="training_phrases")
     creator: Mapped[User | None] = relationship(back_populates="training_phrases")
 
 
@@ -131,6 +134,7 @@ class FallbackReview(Base):
     assigned_to_intent: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("intents.intent_id", ondelete="SET NULL"),
+        index=True,
     )
 
     assigned_intent: Mapped[Intent | None] = relationship(

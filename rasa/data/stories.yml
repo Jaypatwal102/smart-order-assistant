@@ -1,0 +1,12 @@
+version: "3.1"
+
+stories:
+  - story: shipping address update
+    steps:
+      - intent: shipping_address_update
+      - action: shipping_address_update_form
+      - active_loop: shipping_address_update_form
+
+      - active_loop: null
+
+      - action: utter_confirm_update

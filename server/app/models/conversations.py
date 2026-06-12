@@ -43,12 +43,19 @@ class Conversation(Base):
     session_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("user_sessions.session_id", ondelete="SET NULL"),
+        index=True,
     )
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
         default="active",
         server_default=text("'active'"),
+    )
+    detected_language: Mapped[str] = mapped_column(
+        String(10),
+        nullable=False,
+        default="en",
+        server_default=text("'en'"),
     )
     started_at: Mapped[datetime] = mapped_column(
         DateTime,
@@ -85,9 +92,11 @@ class Message(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
-    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("conversations.conversation_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     sender_type: Mapped[str] = mapped_column(String(50), nullable=False)
     message_text: Mapped[str] = mapped_column(Text, nullable=False)
@@ -104,7 +113,7 @@ class Message(Base):
         server_default=func.now(),
     )
 
-    conversation: Mapped[Conversation | None] = relationship(back_populates="messages")
+    conversation: Mapped[Conversation] = relationship(back_populates="messages")
     routing_logs: Mapped[list[BotRoutingLog]] = relationship(
         back_populates="message",
         cascade="all, delete-orphan",
@@ -112,6 +121,7 @@ class Message(Base):
     )
     triggered_handoffs: Mapped[list[FallbackHandoff]] = relationship(
         back_populates="trigger_message",
+        passive_deletes=True,
     )
 
 
@@ -140,9 +150,11 @@ class BotRoutingLog(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
-    message_id: Mapped[uuid.UUID | None] = mapped_column(
+    message_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("messages.message_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     detected_intent: Mapped[str | None] = mapped_column(String(100))
     confidence_score: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
@@ -155,7 +167,7 @@ class BotRoutingLog(Base):
     )
     execution_time_ms: Mapped[int | None] = mapped_column(Integer)
 
-    message: Mapped[Message | None] = relationship(back_populates="routing_logs")
+    message: Mapped[Message] = relationship(back_populates="routing_logs")
 
 
 class FallbackHandoff(Base):
@@ -167,24 +179,26 @@ class FallbackHandoff(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
-    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("conversations.conversation_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     trigger_message_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("messages.message_id"),
+        ForeignKey("messages.message_id", ondelete="SET NULL"),
+        index=True,
     )
     fallback_reason: Mapped[str | None] = mapped_column(String(255))
     assigned_agent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("users.user_id"),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        index=True,
     )
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime)
 
-    conversation: Mapped[Conversation | None] = relationship(
-        back_populates="fallback_handoffs"
-    )
+    conversation: Mapped[Conversation] = relationship(back_populates="fallback_handoffs")
     trigger_message: Mapped[Message | None] = relationship(
         back_populates="triggered_handoffs"
     )
