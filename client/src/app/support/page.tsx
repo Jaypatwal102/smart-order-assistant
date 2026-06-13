@@ -6,6 +6,8 @@ import {
   ShoppingBag, Sun, Mic, ArrowUp, Sparkles, Check, Edit2 
 } from 'lucide-react';
 import styles from './support.module.css';
+import { getCurrentUser, logoutUser } from '@/utils/auth';
+import { useRouter } from 'next/navigation';
 
 interface Message {
   id: string;
@@ -16,6 +18,10 @@ interface Message {
 }
 
 export default function SupportPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -59,6 +65,53 @@ export default function SupportPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const userData = await getCurrentUser(token);
+        setUser(userData);
+      } catch (err) {
+        console.error('Failed to load user', err);
+        logoutUser();
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUser();
+  }, [router]);
+
+  useEffect(() => {
+    if (user) {
+      setMessages(prev => {
+        const newMsgs = [...prev];
+        if (newMsgs[0] && newMsgs[0].id === '1') {
+          newMsgs[0] = {
+            ...newMsgs[0],
+            text: `Hello ${user.first_name || user.email.split('@')[0]}! 👋\nI'm your AI support assistant. How can I help you today?`
+          };
+        }
+        return newMsgs;
+      });
+    }
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
+        <div style={{ width: '40px', height: '40px', border: '4px solid rgba(129, 140, 248, 0.2)', borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   const handleSendMessage = () => {
     if (!inputValue.trim()) return;
@@ -171,12 +224,17 @@ export default function SupportPage() {
         </div>
 
         <div className={styles.userProfile}>
-          <div className={styles.userAvatar}>F</div>
-          <div className={styles.userInfo}>
-            <div className={styles.userName}>Fletcher</div>
-            <div className={styles.userEmail}>fletcher@example.com</div>
+          <div className={styles.userAvatar}>
+            {user?.first_name ? user.first_name[0].toUpperCase() : user?.email?.[0].toUpperCase() || 'U'}
           </div>
-          <ChevronDown size={16} color="#a09fa5" cursor="pointer" />
+          <div className={styles.userInfo}>
+            <div className={styles.userName}>{user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}</div>
+            <div className={styles.userEmail}>{user?.email || ''}</div>
+          </div>
+          <ChevronDown size={16} color="#a09fa5" cursor="pointer" onClick={() => {
+            logoutUser();
+            router.push('/login');
+          }} />
         </div>
       </div>
 
