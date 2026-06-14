@@ -21,7 +21,6 @@ class UserResponse(BaseModel):
     email: EmailStr
     first_name: str | None
     last_name: str | None
-    role: str
     created_at: datetime
     conversations: list[dict] = []
 
