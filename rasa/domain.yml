@@ -1,0 +1,66 @@
+version: "3.1"
+
+intents:
+  - greet
+  - goodbye
+  - shipping_address_update
+  - provide_order_id
+  - provide_new_address
+  - confirm
+  - deny
+  - request_human
+  - out_of_scope
+
+entities:
+  - order_id
+
+slots:
+  order_id:
+    type: text
+    mappings:
+      - type: from_entity
+        entity: order_id
+
+  # We will store the entire user message as the address
+  new_address:
+    type: text
+    mappings:
+      - type: from_text
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: new_address
+
+forms:
+  shipping_address_update_form:
+    required_slots:
+      - order_id
+      - new_address
+
+responses:
+  utter_greet:
+    - text: "Hello! How can I help you today?"
+
+  utter_goodbye:
+    - text: "Goodbye!"
+
+  utter_ask_order_id:
+    - text: "Please provide your order ID."
+
+  utter_ask_new_address:
+    - text: "Please provide the new shipping address."
+
+  utter_confirm_update:
+    - text: "Thank you. Please confirm that you want to update your shipping address. Reply 'Yes' or 'No'."
+
+  utter_cancel:
+    - text: "Okay, the address update request has been cancelled."
+
+  utter_human_handoff:
+    - text: "I'll connect you to a human support agent."
+
+  utter_out_of_scope:
+    - text: "Sorry, I can only help with shipping address updates."
+
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

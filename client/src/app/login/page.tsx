@@ -1,33 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import styles from '../auth.module.css';
 import { useState } from 'react';
-import { loginUser } from '@/utils/auth';
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      await loginUser(email, password);
-      router.push('/support');
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className={styles.container}>
@@ -61,18 +39,9 @@ export default function LoginPage() {
             Don't have an account? <Link href="/register" className={styles.link}>Sign up</Link>
           </p>
 
-          {error && <div style={{ color: 'red', marginBottom: '1rem', padding: '10px', backgroundColor: '#ffebee', borderRadius: '4px', fontSize: '14px' }}>{error}</div>}
-
-          <form onSubmit={handleLogin}>
+          <form onSubmit={(e) => e.preventDefault()}>
             <div className={styles.formGroup}>
-              <input 
-                type="email" 
-                placeholder="Email" 
-                className={styles.input} 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <input type="email" placeholder="Email" className={styles.input} />
             </div>
 
             <div className={styles.formGroup}>
@@ -80,9 +49,6 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"} 
                 placeholder="Enter your password" 
                 className={styles.input} 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
               />
               <div 
                 className={styles.passwordIcon}
@@ -114,8 +80,8 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <button type="submit" className={styles.submitBtn} disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Log in'}
+            <button type="submit" className={styles.submitBtn}>
+              Log in
             </button>
           </form>
 
