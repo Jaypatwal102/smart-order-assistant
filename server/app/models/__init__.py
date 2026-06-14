@@ -5,6 +5,7 @@ from app.models.conversations import (
     Message,
 )
 from app.models.intents import FallbackReview, Intent, IntentTrainingPhrase
+from app.models.orders import Order
 from app.models.users import User, UserSession
 
 __all__ = [
@@ -15,6 +16,7 @@ __all__ = [
     "Intent",
     "IntentTrainingPhrase",
     "Message",
+    "Order",
     "User",
     "UserSession",
 ]

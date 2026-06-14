@@ -13,6 +13,7 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.conversations import Conversation, FallbackHandoff
     from app.models.intents import IntentTrainingPhrase
+    from app.models.orders import Order
 
 
 class User(Base):
@@ -44,6 +45,11 @@ class User(Base):
     )
     training_phrases: Mapped[list[IntentTrainingPhrase]] = relationship(
         back_populates="creator",
+    )
+    orders: Mapped[list[Order]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
 
