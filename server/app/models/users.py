@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, func, text
+from sqlalchemy import DateTime, ForeignKey, String, func, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,12 +18,6 @@ if TYPE_CHECKING:
 
 class User(Base):
     __tablename__ = "users"
-    __table_args__ = (
-        CheckConstraint(
-            "role IN ('customer', 'admin', 'human_agent')",
-            name="ck_users_role",
-        ),
-    )
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -35,12 +29,6 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
-    role: Mapped[str] = mapped_column(
-        String(50),
-        nullable=False,
-        default="customer",
-        server_default=text("'customer'"),
-    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
@@ -67,12 +55,6 @@ class User(Base):
 
 class UserSession(Base):
     __tablename__ = "user_sessions"
-    __table_args__ = (
-        CheckConstraint(
-            "device_type IS NULL OR device_type IN ('web', 'mobile', 'voice_sip')",
-            name="ck_user_sessions_device_type",
-        ),
-    )
 
     session_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -83,15 +65,9 @@ class UserSession(Base):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.user_id", ondelete="CASCADE"),
+        index=True,
     )
     auth_token: Mapped[str] = mapped_column(String(500), nullable=False)
-    device_type: Mapped[str | None] = mapped_column(String(50))
-    detected_language: Mapped[str] = mapped_column(
-        String(10),
-        nullable=False,
-        default="en",
-        server_default=text("'en'"),
-    )
     login_time: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,

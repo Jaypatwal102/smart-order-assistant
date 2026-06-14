@@ -1,37 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import styles from '../auth.module.css';
 import { useState } from 'react';
-import { registerUser, loginUser } from '@/utils/auth';
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      await registerUser(firstName, lastName, email, password);
-      // Log in automatically
-      await loginUser(email, password);
-      router.push('/support');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className={styles.container}>
@@ -65,39 +39,18 @@ export default function RegisterPage() {
             Already have an account? <Link href="/login" className={styles.link}>Log in</Link>
           </p>
 
-          {error && <div style={{ color: 'red', marginBottom: '1rem', padding: '10px', backgroundColor: '#ffebee', borderRadius: '4px', fontSize: '14px' }}>{error}</div>}
-
-          <form onSubmit={handleRegister}>
+          <form onSubmit={(e) => e.preventDefault()}>
             <div className={styles.formGroupRow}>
               <div className={styles.formGroup}>
-                <input 
-                  type="text" 
-                  placeholder="First Name" 
-                  className={styles.input} 
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                />
+                <input type="text" placeholder="First Name" className={styles.input} />
               </div>
               <div className={styles.formGroup}>
-                <input 
-                  type="text" 
-                  placeholder="Last Name" 
-                  className={styles.input} 
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
+                <input type="text" placeholder="Last Name" className={styles.input} />
               </div>
             </div>
 
             <div className={styles.formGroup}>
-              <input 
-                type="email" 
-                placeholder="Email" 
-                className={styles.input} 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <input type="email" placeholder="Email" className={styles.input} />
             </div>
 
             <div className={styles.formGroup}>
@@ -105,9 +58,6 @@ export default function RegisterPage() {
                 type={showPassword ? "text" : "password"} 
                 placeholder="Enter your password" 
                 className={styles.input} 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
               />
               <div 
                 className={styles.passwordIcon}
@@ -130,14 +80,14 @@ export default function RegisterPage() {
             </div>
 
             <div className={styles.checkboxGroup}>
-              <input type="checkbox" id="terms" className={styles.checkbox} required defaultChecked />
+              <input type="checkbox" id="terms" className={styles.checkbox} defaultChecked />
               <label htmlFor="terms">
                 I agree to the <Link href="/terms">Terms & Conditions</Link>
               </label>
             </div>
 
-            <button type="submit" className={styles.submitBtn} disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create account'}
+            <button type="submit" className={styles.submitBtn}>
+              Create account
             </button>
           </form>
 

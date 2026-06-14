@@ -247,17 +247,12 @@ export default function SupportPage() {
         </div>
 
         <div className={styles.userProfile}>
-          <div className={styles.userAvatar}>
-            {user?.first_name ? user.first_name[0].toUpperCase() : user?.email?.[0].toUpperCase() || 'U'}
-          </div>
+          <div className={styles.userAvatar}>F</div>
           <div className={styles.userInfo}>
-            <div className={styles.userName}>{user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}</div>
-            <div className={styles.userEmail}>{user?.email || ''}</div>
+            <div className={styles.userName}>Fletcher</div>
+            <div className={styles.userEmail}>fletcher@example.com</div>
           </div>
-          <ChevronDown size={16} color="#a09fa5" cursor="pointer" onClick={() => {
-            logoutUser();
-            router.push('/login');
-          }} />
+          <ChevronDown size={16} color="#a09fa5" cursor="pointer" />
         </div>
       </div>
 

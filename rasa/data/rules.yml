@@ -1,0 +1,36 @@
+version: "3.1"
+
+rules:
+  - rule: Activate shipping address form
+    steps:
+      - intent: shipping_address_update
+      - action: shipping_address_update_form
+      - active_loop: shipping_address_update_form
+
+  - rule: Submit shipping address form
+    condition:
+      - active_loop: shipping_address_update_form
+    steps:
+      - action: shipping_address_update_form
+      - active_loop: null
+      - action: utter_confirm_update
+
+  - rule: Respond to greeting
+    steps:
+      - intent: greet
+      - action: utter_greet
+
+  - rule: Respond to goodbye
+    steps:
+      - intent: goodbye
+      - action: utter_goodbye
+
+  - rule: Human handoff
+    steps:
+      - intent: request_human
+      - action: utter_human_handoff
+
+  - rule: Out of scope
+    steps:
+      - intent: out_of_scope
+      - action: utter_out_of_scope
