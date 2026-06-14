@@ -54,3 +54,25 @@ export async function getCurrentUser(token: string) {
 export function logoutUser() {
   document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 }
+
+export async function sendMessage(token: string, text: string, conversationId: string | null = null) {
+  const body: any = { message_text: text };
+  if (conversationId) {
+    body.conversation_id = conversationId;
+  }
+  
+  const response = await fetch(`${API_URL}/conversations/message`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send message");
+  }
+
+  return response.json();
+}

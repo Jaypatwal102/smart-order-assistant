@@ -15,7 +15,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers import auth, conversations
+
 app.include_router(auth.router)
+app.include_router(conversations.router)
 
 @app.get("/")
 def root():
