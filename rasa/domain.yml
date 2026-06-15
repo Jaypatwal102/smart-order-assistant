@@ -13,13 +13,44 @@ intents:
 
 entities:
   - order_id
+  - product_name
+
+actions:
+  - action_submit_shipping_update
+  - action_cancel_shipping_update
+  - validate_shipping_address_update_form
 
 slots:
+  user_id:
+    type: text
+    mappings: []
+
   order_id:
+    type: text
+    mappings: []
+
+  product_name:
     type: text
     mappings:
       - type: from_entity
-        entity: order_id
+        entity: product_name
+
+  product_confirmed:
+    type: bool
+    influence_conversation: true
+    mappings:
+      - type: from_intent
+        value: true
+        intent: confirm
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: product_confirmed
+      - type: from_intent
+        value: false
+        intent: deny
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: product_confirmed
 
   # We will store the entire user message as the address
   new_address:
@@ -33,7 +64,8 @@ slots:
 forms:
   shipping_address_update_form:
     required_slots:
-      - order_id
+      - product_name
+      - product_confirmed
       - new_address
 
 responses:
@@ -42,6 +74,12 @@ responses:
 
   utter_goodbye:
     - text: "Goodbye!"
+
+  utter_ask_product_name:
+    - text: "What is the name of the product you ordered?"
+
+  utter_ask_product_confirmed:
+    - text: "Found order '{order_id}' containing your '{product_name}'. Did you mean this product? Reply 'Yes' or 'No'."
 
   utter_ask_order_id:
     - text: "Please provide your order ID."

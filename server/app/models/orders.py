@@ -33,6 +33,10 @@ class Order(Base):
         default="pending",
         server_default=text("'pending'"),
     )
+    product_name: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
     total_amount: Mapped[float] = mapped_column(
         Numeric(10, 2),
         nullable=False,

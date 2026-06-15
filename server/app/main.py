@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth
+from app.routers import auth, orders, conversations
 from app.core.database import create_tables
 
 create_tables()
@@ -15,10 +15,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import auth, conversations
-
 app.include_router(auth.router)
 app.include_router(conversations.router)
+app.include_router(orders.router)
 
 @app.get("/")
 def root():

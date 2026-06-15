@@ -7,6 +7,9 @@ nlu:
   - intent: greet
     examples: |
       - hi
+      - hii
+      - heyy
+      - heyya
       - hello
       - hey
       - good morning
@@ -46,32 +49,32 @@ nlu:
       - Please change where my order will be delivered
       - I need to change my address for my order
       - Update the address for my package
-      - Change my address for order [ORD12345](order_id)
-      - Update shipping address for [ORD56789](order_id)
-      - Change my delivery address for [OD1001](order_id)
-      - I want to change my address for [ORDER999](order_id)
-      - Update my address for [ABC123](order_id)
-      - Change my address for [ORD12345](order_id) to [42 MG Road, Pune](new_address)
+      - Change my address for my [moisturizer](product_name)
+      - Update shipping address for my [serum](product_name)
+      - Change my delivery address for my [cleanser](product_name)
+      - I want to change my address for my [toner](product_name)
+      - Update my address for my [sunscreen](product_name)
+      - Change my address for my [moisturizer](product_name) to [42 MG Road, Pune](new_address)
       - Update my delivery location to [221B Baker Street, London](new_address)
       - Ship my package to [Sector 18, Noida](new_address)
       - Change the address to [12 Park Street, Kolkata](new_address)
       - I want my order delivered to [MG Road, Bengaluru](new_address)
-
+ 
   # -------------------------
-  # PROVIDE ORDER ID
+  # PROVIDE PRODUCT NAME
   # -------------------------
-  - intent: provide_order_id
+  - intent: provide_product_name
     examples: |
-      - [ORD12345](order_id)
-      - My order ID is [ORD12345](order_id)
-      - The order number is [ORD56789](order_id)
-      - It is [OD1001](order_id)
-      - My order is [ABC123](order_id)
-      - Order ID [XYZ999](order_id)
-      - [ORDER2025](order_id)
-      - Use order [ORD88888](order_id)
-      - Please check [ORD11111](order_id)
-      - The ID is [ORD22222](order_id)
+      - [moisturizer](product_name)
+      - My product is [moisturizer](product_name)
+      - The product is [serum](product_name)
+      - It is [cleanser](product_name)
+      - I ordered [lotion](product_name)
+      - Use [sunscreen](product_name)
+      - Please check [toner](product_name)
+      - The product name is [moisturizer](product_name)
+      - [dry skin cream](product_name)
+      - [face wash](product_name)
 
   # -------------------------
   # PROVIDE NEW ADDRESS
@@ -154,3 +157,54 @@ nlu:
       - Who is the prime minister
       - Write a poem
       - Solve my math homework
+      - I want to order something
+      - Can I buy a product
+      - Place a new order
+      - How do I purchase items
+      - I want to cancel my order
+      - Cancel my purchase
+      - Track my order
+      - Where is my package
+      - When will my order arrive
+      - Show me my order status
+      - I want a refund
+      - Return my order
+      - I received the wrong product
+      - Replace my item
+      - I want to exchange my order
+      - How can I contact customer support
+      - Connect me to sales
+      - Do you have any discounts
+      - Show me today's offers
+      - Apply a coupon code
+      - Recommend a product
+      - Search for laptops
+      - Find me a mobile phone
+      - I want to buy shoes
+      - Can you book a flight
+      - Book a hotel for me
+      - Reserve a cab
+      - Set an alarm
+      - What's the current time
+      - Translate this sentence
+      - Summarize this article
+      - Generate some code
+      - Explain machine learning
+      - Who is the president of the United States
+      - What's the capital of France
+      - Calculate 25 multiplied by 16
+      - Tell me today's news
+      - Show me the latest sports updates
+      - Send an email for me
+      - Draft a resume
+      - Help me prepare for an interview
+      - I forgot my password
+      - Delete my account
+      - Update my phone number
+      - Change my email address
+      - What payment methods do you accept
+      - Can I pay with UPI
+      - Help me with billing
+      - I have a complaint
+      - I want to speak to customer care
+
