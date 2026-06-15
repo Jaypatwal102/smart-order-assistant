@@ -19,3 +19,7 @@ class ConversationResponse(BaseModel):
     started_at: str
     ended_at: str | None
     messages: list[MessageResponse]
+
+class ConversationUpdate(BaseModel):
+    status: str | None = None
+    detected_language: str | None = None

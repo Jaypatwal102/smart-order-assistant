@@ -37,6 +37,10 @@ class Order(Base):
         String(255),
         nullable=True,
     )
+    shipping_address: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
     total_amount: Mapped[float] = mapped_column(
         Numeric(10, 2),
         nullable=False,

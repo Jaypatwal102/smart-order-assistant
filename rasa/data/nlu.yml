@@ -61,20 +61,20 @@ nlu:
       - I want my order delivered to [MG Road, Bengaluru](new_address)
  
   # -------------------------
-  # PROVIDE PRODUCT NAME
+  # PROVIDE ORDER ID
   # -------------------------
-  - intent: provide_product_name
+  - intent: provide_order_id
     examples: |
-      - [moisturizer](product_name)
-      - My product is [moisturizer](product_name)
-      - The product is [serum](product_name)
-      - It is [cleanser](product_name)
-      - I ordered [lotion](product_name)
-      - Use [sunscreen](product_name)
-      - Please check [toner](product_name)
-      - The product name is [moisturizer](product_name)
-      - [dry skin cream](product_name)
-      - [face wash](product_name)
+      - [ORD11111](order_id)
+      - [ORD22222](order_id)
+      - [ORD12345](order_id)
+      - [ORD56789](order_id)
+      - [ORD88888](order_id)
+      - [11111111-1111-1111-1111-111111111111](order_id)
+      - My order ID is [ORD11111](order_id)
+      - The ID is [ORD12345](order_id)
+      - It is [ORD22222](order_id)
+      - [ORD_MOCK_1](order_id)
 
   # -------------------------
   # PROVIDE NEW ADDRESS

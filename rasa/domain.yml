@@ -27,7 +27,13 @@ slots:
 
   order_id:
     type: text
-    mappings: []
+    mappings:
+      - type: from_entity
+        entity: order_id
+      - type: from_text
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: order_id
 
   product_name:
     type: text
@@ -42,15 +48,9 @@ slots:
       - type: from_intent
         value: true
         intent: confirm
-        conditions:
-          - active_loop: shipping_address_update_form
-            requested_slot: product_confirmed
       - type: from_intent
         value: false
         intent: deny
-        conditions:
-          - active_loop: shipping_address_update_form
-            requested_slot: product_confirmed
 
   # We will store the entire user message as the address
   new_address:
@@ -64,8 +64,7 @@ slots:
 forms:
   shipping_address_update_form:
     required_slots:
-      - product_name
-      - product_confirmed
+      - order_id
       - new_address
 
 responses:
