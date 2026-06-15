@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, orders, conversations
 from app.core.database import create_tables
+from fastapi.staticfiles import StaticFiles
+import os
 
 create_tables()
 
@@ -14,6 +16,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+os.makedirs("audios", exist_ok=True)
+app.mount("/audios", StaticFiles(directory="audios"), name="audios")
 
 app.include_router(auth.router)
 app.include_router(conversations.router)
