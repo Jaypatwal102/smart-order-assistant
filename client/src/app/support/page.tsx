@@ -6,6 +6,8 @@ import {
   ShoppingBag, Sun, Mic, ArrowUp, Sparkles, Check, Edit2 
 } from 'lucide-react';
 import styles from './support.module.css';
+import { getCurrentUser, logoutUser, sendMessage } from '@/utils/auth';
+import { useRouter } from 'next/navigation';
 
 interface Message {
   id: string;
@@ -16,38 +18,15 @@ interface Message {
 }
 
 export default function SupportPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'ai',
-      text: 'Hello Fletcher! 👋\nI\'m your AI support assistant. How can I help you today?',
-      time: '10:24 AM'
-    },
-    {
-      id: '2',
-      sender: 'user',
-      text: 'I want to update my shipping address for order #AMU12345',
-      time: '10:25 AM'
-    },
-    {
-      id: '3',
-      sender: 'ai',
-      text: 'Sure! I can help you with that.\nPlease confirm your new shipping address.',
-      time: '10:25 AM'
-    },
-    {
-      id: '4',
-      sender: 'ai',
-      isCustomCard: true,
-      time: '10:25 AM'
-    },
-    {
-      id: '5',
-      sender: 'user',
-      text: 'Yes, I want to change it.',
-      time: '10:26 AM'
-    }
-  ]);
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [allConversations, setAllConversations] = useState<any[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+
+  const [messages, setMessages] = useState<Message[]>([]);
+
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -60,13 +39,91 @@ export default function SupportPage() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSendMessage = () => {
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const userData = await getCurrentUser(token);
+        setUser(userData);
+        if (userData.conversations && userData.conversations.length > 0) {
+          setAllConversations(userData.conversations);
+        }
+      } catch (err) {
+        console.error('Failed to load user', err);
+        logoutUser();
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadUser();
+  }, [router]);
+
+  useEffect(() => {
+    if (user && messages.length === 0 && !activeConversationId) {
+      setMessages([
+        {
+          id: '1',
+          sender: 'ai',
+          text: `Hello ${user.first_name || user.email.split('@')[0]}! 👋\nI'm your AI support assistant. How can I help you today?`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    }
+  }, [user, messages.length, activeConversationId]);
+
+  const loadConversation = (conv: any) => {
+    setActiveConversationId(conv.id);
+    if (!conv.messages || conv.messages.length === 0) {
+      setMessages([
+        {
+          id: '1',
+          sender: 'ai',
+          text: `Hello ${user?.first_name || user?.email?.split('@')[0]}! 👋\nI'm your AI support assistant. How can I help you today?`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+      return;
+    }
+
+    const formattedMsgs = conv.messages.map((m: any) => {
+      let timeStr = '';
+      if (m.created_at) {
+        timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      return {
+        id: m.id,
+        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+        text: m.message_text,
+        time: timeStr
+      };
+    });
+    setMessages(formattedMsgs);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' }}>
+        <div style={{ width: '40px', height: '40px', border: '4px solid rgba(129, 140, 248, 0.2)', borderTopColor: '#818cf8', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
+    const userText = inputValue;
     const newUserMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
-      text: inputValue,
+      text: userText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
@@ -74,17 +131,41 @@ export default function SupportPage() {
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      if (!token) throw new Error("No token found");
+
+      const updatedConv = await sendMessage(token, userText, activeConversationId);
+      
+      // Update the active conversation ID in case it was a new conversation
+      setActiveConversationId(updatedConv.id);
+
+      // Map messages back to UI format
+      const formattedMsgs = updatedConv.messages.map((m: any) => ({
+        id: m.id,
+        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+        text: m.message_text,
+        time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+      }));
+
+      setMessages(formattedMsgs);
+
+      // Update allConversations in Sidebar
+      setAllConversations(prev => {
+        const index = prev.findIndex(c => c.id === updatedConv.id);
+        if (index >= 0) {
+          const newAll = [...prev];
+          newAll[index] = updatedConv;
+          return newAll;
+        } else {
+          return [updatedConv, ...prev];
+        }
+      });
+    } catch (err) {
+      console.error("Failed to send message", err);
+    } finally {
       setIsTyping(false);
-      const newAiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'ai',
-        text: 'I have updated your request. A support agent will verify the changes shortly. Is there anything else I can help with?',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, newAiMessage]);
-    }, 1500);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -99,59 +180,54 @@ export default function SupportPage() {
       <div className={styles.sidebar}>
         <div className={styles.logo}>AMU</div>
         
-        <button className={styles.newChatBtn}>
+        <button className={styles.newChatBtn} onClick={() => {
+          setActiveConversationId(null);
+          setMessages([
+            {
+              id: '1',
+              sender: 'ai',
+              text: `Hello ${user?.first_name || user?.email?.split('@')[0]}! 👋\nI'm your AI support assistant. How can I help you today?`,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }
+          ]);
+        }}>
           <Plus size={18} /> New Chat
         </button>
 
         <div className={styles.historySection}>
           <div className={styles.historyGroup}>
-            <div className={styles.historyTitle}>Today</div>
-            <div className={styles.historyItem}>
-              <div className={styles.historyText}>
-                <MessageSquare size={16} color="#a09fa5" /> Update shipping address
-              </div>
-              <div className={styles.historyTime}>10:24 AM</div>
-            </div>
-            <div className={styles.historyItem}>
-              <div className={styles.historyText}>
-                <MessageSquare size={16} color="#a09fa5" /> Track my order
-              </div>
-              <div className={styles.historyTime}>09:15 AM</div>
-            </div>
-            <div className={styles.historyItem}>
-              <div className={styles.historyText}>
-                <MessageSquare size={16} color="#a09fa5" /> Return an item
-              </div>
-              <div className={styles.historyTime}>Yesterday</div>
-            </div>
-            <div className={styles.historyItem}>
-              <div className={styles.historyText}>
-                <MessageSquare size={16} color="#a09fa5" /> Order not delivered
-              </div>
-              <div className={styles.historyTime}>Yesterday</div>
-            </div>
-          </div>
+            <div className={styles.historyTitle}>Your Conversations</div>
+            {allConversations.length === 0 && (
+              <div style={{ color: '#a09fa5', fontSize: '13px', padding: '10px 16px' }}>No previous conversations</div>
+            )}
+            {allConversations.map(conv => {
+              // Try to find the first user message for title, otherwise generic
+              const firstUserMsg = conv.messages?.find((m: any) => m.sender_type === 'user');
+              const title = firstUserMsg ? firstUserMsg.message_text.substring(0, 30) + (firstUserMsg.message_text.length > 30 ? '...' : '') : 'New Conversation';
+              
+              let timeStr = '';
+              if (conv.started_at) {
+                const date = new Date(conv.started_at);
+                timeStr = date.toLocaleDateString() === new Date().toLocaleDateString() 
+                  ? date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  : date.toLocaleDateString();
+              }
 
-          <div className={styles.historyGroup}>
-            <div className={styles.historyTitle}>Previous 7 days</div>
-            <div className={styles.historyItem}>
-              <div className={styles.historyText}>
-                <MessageSquare size={16} color="#a09fa5" /> Change payment method
-              </div>
-              <div className={styles.historyTime}>3 days ago</div>
-            </div>
-            <div className={styles.historyItem}>
-              <div className={styles.historyText}>
-                <MessageSquare size={16} color="#a09fa5" /> Cancel order
-              </div>
-              <div className={styles.historyTime}>4 days ago</div>
-            </div>
-            <div className={styles.historyItem}>
-              <div className={styles.historyText}>
-                <MessageSquare size={16} color="#a09fa5" /> Product support
-              </div>
-              <div className={styles.historyTime}>5 days ago</div>
-            </div>
+              return (
+                <div 
+                  key={conv.id} 
+                  className={styles.historyItem} 
+                  style={{ background: activeConversationId === conv.id ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                  onClick={() => loadConversation(conv)}
+                >
+                  <div className={styles.historyText}>
+                    <MessageSquare size={16} color="#a09fa5" style={{ flexShrink: 0 }} /> 
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</span>
+                  </div>
+                  <div className={styles.historyTime}>{timeStr}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -171,12 +247,17 @@ export default function SupportPage() {
         </div>
 
         <div className={styles.userProfile}>
-          <div className={styles.userAvatar}>F</div>
-          <div className={styles.userInfo}>
-            <div className={styles.userName}>Fletcher</div>
-            <div className={styles.userEmail}>fletcher@example.com</div>
+          <div className={styles.userAvatar}>
+            {user?.first_name ? user.first_name[0].toUpperCase() : user?.email?.[0].toUpperCase() || 'U'}
           </div>
-          <ChevronDown size={16} color="#a09fa5" cursor="pointer" />
+          <div className={styles.userInfo}>
+            <div className={styles.userName}>{user?.first_name ? `${user.first_name} ${user.last_name || ''}` : 'User'}</div>
+            <div className={styles.userEmail}>{user?.email || ''}</div>
+          </div>
+          <ChevronDown size={16} color="#a09fa5" cursor="pointer" onClick={() => {
+            logoutUser();
+            router.push('/login');
+          }} />
         </div>
       </div>
 
