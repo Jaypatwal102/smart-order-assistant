@@ -5,7 +5,8 @@ import uuid
 import os
 import shutil
 import whisper
-from typing import Optionalimport requests
+from typing import Optional
+import requests
 
 from app.core.database import get_db
 from app.core.config import RASA_URL
