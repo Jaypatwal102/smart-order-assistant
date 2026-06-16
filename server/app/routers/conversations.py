@@ -15,6 +15,68 @@ from app.models.conversations import Conversation, Message
 from app.schemas.conversations import MessageCreate, ConversationUpdate
 from app.routers.auth import get_current_user, oauth2_scheme
 
+def _forward_message_to_rasa(conversation_id: str, user_id: str, message_text: str, db: Session):
+    bot_responses = []
+    request_failed = False
+    try:
+        # 1. Sync the user_id slot in Rasa for this conversation session
+        event_url = f"{RASA_URL}/conversations/{conversation_id}/tracker/events"
+        requests.post(
+            event_url,
+            json={
+                "event": "slot",
+                "name": "user_id",
+                "value": str(user_id)
+            },
+            timeout=5
+        )
+        
+        # 2. Post the user message to Rasa REST webhook
+        webhook_url = f"{RASA_URL}/webhooks/rest/webhook"
+        rasa_res = requests.post(
+            webhook_url,
+            json={
+                "sender": str(conversation_id),
+                "message": message_text
+            },
+            timeout=10
+        )
+        
+        if rasa_res.status_code == 200:
+            bot_responses = rasa_res.json()
+        else:
+            request_failed = True
+    except Exception as e:
+        print(f"Rasa integration communication error: {e}. Falling back to default message.")
+        request_failed = True
+
+    if request_failed:
+        # Fallback if Rasa is offline or threw an error
+        ai_msg = Message(
+            conversation_id=conversation_id,
+            sender_type="bot",
+            message_text="I'm sorry, I am currently offline or experiencing issues. Please try again later."
+        )
+        db.add(ai_msg)
+    elif bot_responses:
+        for resp in bot_responses:
+            text_response = resp.get("text")
+            if text_response:
+                ai_msg = Message(
+                    conversation_id=conversation_id,
+                    sender_type="bot",
+                    message_text=text_response
+                )
+                db.add(ai_msg)
+    else:
+        # Fallback if Rasa is online but didn't return a text response
+        ai_msg = Message(
+            conversation_id=conversation_id,
+            sender_type="bot",
+            message_text="I'm sorry, I didn't quite catch that. Could you please rephrase?"
+        )
+        db.add(ai_msg)
+
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 
@@ -68,55 +130,7 @@ def send_message(
     db.add(user_msg)
     
     # Forward user_id and message to Rasa
-    bot_responses = []
-    try:
-        # 1. Sync the user_id slot in Rasa for this conversation session
-        event_url = f"{RASA_URL}/conversations/{conversation_id}/tracker/events"
-        requests.post(
-            event_url,
-            json={
-                "event": "slot",
-                "name": "user_id",
-                "value": str(current_user.user_id)
-            },
-            timeout=5
-        )
-        
-        # 2. Post the user message to Rasa REST webhook
-        webhook_url = f"{RASA_URL}/webhooks/rest/webhook"
-        rasa_res = requests.post(
-            webhook_url,
-            json={
-                "sender": str(conversation_id),
-                "message": msg_in.message_text
-            },
-            timeout=10
-        )
-        
-        if rasa_res.status_code == 200:
-            bot_responses = rasa_res.json()
-    except Exception as e:
-        print(f"Rasa integration communication error: {e}. Falling back to default message.")
-
-    # Create Bot Messages in the database
-    if bot_responses:
-        for resp in bot_responses:
-            text_response = resp.get("text")
-            if text_response:
-                ai_msg = Message(
-                    conversation_id=conversation_id,
-                    sender_type="bot",
-                    message_text=text_response
-                )
-                db.add(ai_msg)
-    else:
-        # Fallback if Rasa is offline or didn't return a text response
-        ai_msg = Message(
-            conversation_id=conversation_id,
-            sender_type="bot",
-            message_text="I have received your message. I am an AI assistant and will process your request shortly."
-        )
-        db.add(ai_msg)
+    _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), msg_in.message_text, db)
         
     db.commit()
     
@@ -203,12 +217,9 @@ def send_audio(
     )
     db.add(user_msg)
     
-    ai_msg = Message(
-        conversation_id=conversation_id,
-        sender_type="bot",
-        message_text=f"I heard you say: '{transcribed_text}'. I am an AI assistant and will process your request shortly."
-    )
-    db.add(ai_msg)
+    # Forward user_id and transcribed message to Rasa
+    _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), transcribed_text, db)
+    
     db.commit()
     
     conv = db.query(Conversation).options(joinedload(Conversation.messages)).filter(Conversation.conversation_id == conversation_id).first()
