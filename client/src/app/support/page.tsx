@@ -6,7 +6,7 @@ import {
   ShoppingBag, Sun, Mic, ArrowUp, Sparkles, Check, Edit2 
 } from 'lucide-react';
 import styles from './support.module.css';
-import { getCurrentUser, logoutUser, sendMessage } from '@/utils/auth';
+import { getCurrentUser, logoutUser, sendMessage, sendAudioMessage } from '@/utils/auth';
 import { useRouter } from 'next/navigation';
 
 interface Message {
@@ -29,6 +29,9 @@ export default function SupportPage() {
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -163,6 +166,75 @@ export default function SupportPage() {
       });
     } catch (err) {
       console.error("Failed to send message", err);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        handleSendAudio(audioBlob);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert("Could not access microphone.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsRecording(false);
+    }
+  };
+
+  const handleSendAudio = async (audioBlob: Blob) => {
+    setIsTyping(true);
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      if (!token) throw new Error("No token found");
+
+      const updatedConv = await sendAudioMessage(token, audioBlob, activeConversationId);
+      setActiveConversationId(updatedConv.id);
+
+      const formattedMsgs = updatedConv.messages.map((m: any) => ({
+        id: m.id,
+        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+        text: m.message_text,
+        time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+      }));
+
+      setMessages(formattedMsgs);
+
+      setAllConversations(prev => {
+        const index = prev.findIndex(c => c.id === updatedConv.id);
+        if (index >= 0) {
+          const newAll = [...prev];
+          newAll[index] = updatedConv;
+          return newAll;
+        } else {
+          return [updatedConv, ...prev];
+        }
+      });
+    } catch (err) {
+      console.error("Failed to send audio message", err);
     } finally {
       setIsTyping(false);
     }
@@ -352,7 +424,11 @@ export default function SupportPage() {
               onKeyDown={handleKeyDown}
             />
             <div className={styles.inputActions}>
-              <button className={styles.audioBtn}>
+              <button 
+                className={styles.audioBtn} 
+                onClick={isRecording ? stopRecording : startRecording}
+                style={{ color: isRecording ? '#ef4444' : undefined }}
+              >
                 <Mic size={20} />
               </button>
               <button className={styles.sendBtn} onClick={handleSendMessage}>
