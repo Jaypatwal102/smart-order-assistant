@@ -425,9 +425,8 @@ export default function SupportPage() {
             />
             <div className={styles.inputActions}>
               <button 
-                className={styles.audioBtn} 
+                className={isRecording ? `${styles.audioBtn} ${styles.recording}` : styles.audioBtn}
                 onClick={isRecording ? stopRecording : startRecording}
-                style={{ color: isRecording ? '#ef4444' : undefined }}
               >
                 <Mic size={20} />
               </button>
