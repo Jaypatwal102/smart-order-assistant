@@ -1,11 +1,12 @@
 from typing import Any
+import os
 import requests
 
 from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.events import AllSlotsReset
 from rasa_sdk.executor import CollectingDispatcher
 
-FASTAPI_URL = "http://localhost:8000"
+FASTAPI_URL = os.getenv("FASTAPI_URL") or "http://localhost:8000"
 
 
 class ActionSubmitShippingUpdate(Action):
@@ -74,100 +75,75 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
     def name(self) -> str:
         return "validate_shipping_address_update_form"
 
-    def validate_product_name(
+    def validate_order_id(
         self,
         slot_value: Any,
         dispatcher: CollectingDispatcher,
         tracker: Tracker,
         domain: dict[str, Any],
     ) -> dict[str, Any]:
-        """Validates the product_name slot by checking user's orders list."""
-        product_name = slot_value
-        user_id = tracker.get_slot("user_id") or tracker.sender_id
+        """Validates the order_id slot by checking it against the FastAPI database and ownership."""
+        order_id = slot_value
+        if not order_id:
+            return {"order_id": None}
 
-        # 1. Fetch user orders from FastAPI
-        orders = []
+        # Strip any single/double quotes
+        order_id = str(order_id).strip('"').strip("'")
+        user_id = tracker.get_slot("user_id")
+
+        if not user_id:
+            dispatcher.utter_message(
+                text="Session error: Could not identify your user session. Please log in again."
+            )
+            return {"order_id": None}
+
+        # Call FastAPI to get the specific order details
         try:
-            url = f"{FASTAPI_URL}/orders"
-            response = requests.get(url, params={"user_id": user_id}, timeout=5)
+            url = f"{FASTAPI_URL}/orders/{order_id}"
+            response = requests.get(url, timeout=5)
+            
             if response.status_code == 200:
-                orders = response.json()
-        except requests.RequestException:
-            print("FastAPI server unreachable. Falling back to local mock list.")
-
-        # 2. Local mock list if server is unreachable
-        if not orders:
-            if user_id == "user_1":
-                orders = [
-                    {"order_id": "ORD11111", "user_id": "user_1", "status": "pending", "product_name": "moisturizer"},
-                    {"order_id": "ORD12345", "user_id": "user_1", "status": "dispatched", "product_name": "serum"},
-                    {"order_id": "ORD56789", "user_id": "user_1", "status": "out for delivery", "product_name": "toner"},
-                    {"order_id": "ORD88888", "user_id": "user_1", "status": "delivered", "product_name": "sunscreen"}
-                ]
-            elif user_id == "user_2":
-                orders = [
-                    {"order_id": "ORD22222", "user_id": "user_2", "status": "pending", "product_name": "cleanser"}
-                ]
-            elif user_id in ["default", "guest", "admin"]:
-                orders = [
-                    {"order_id": "ORD_MOCK_1", "user_id": user_id, "status": "pending", "product_name": "moisturizer"},
-                    {"order_id": "ORD_MOCK_2", "user_id": user_id, "status": "dispatched", "product_name": "serum"}
-                ]
-
-        # 3. Find matching product in user's orders
-        matched_order = None
-        p_name_lower = product_name.lower()
-        for order in orders:
-            if order.get("product_name") and p_name_lower in order.get("product_name").lower():
-                matched_order = order
-                break
-
-        # 4. If no product matches
-        if not matched_order:
-            dispatcher.utter_message(
-                text=f"Sorry, no product with the name '{product_name}' was found in your orders."
-            )
-            return {"product_name": None}
-
-        # 5. Check order status constraints
-        status = matched_order.get("status")
-        order_id = matched_order.get("order_id")
-        matched_product_name = matched_order.get("product_name")
-        restricted_statuses = ["dispatched", "out for delivery", "delivered"]
-        if status in restricted_statuses:
-            dispatcher.utter_message(
-                text=(
-                    f"Sorry, the shipping address for order '{order_id}' ({matched_product_name}) "
-                    f"cannot be changed because its current status is '{status}'."
+                order_data = response.json()
+                
+                # Check ownership: verify order.user_id matches current_user.user_id
+                order_user_uuid = str(order_data.get("user_id")).lower()
+                current_user_uuid = str(user_id).lower()
+                
+                if order_user_uuid != current_user_uuid:
+                    dispatcher.utter_message(
+                        text=f"Sorry, order '{order_id}' is not associated with your account."
+                    )
+                    return {"order_id": None}
+                
+                # Check order status constraints
+                status = order_data.get("status")
+                restricted_statuses = ["dispatched", "out for delivery", "delivered"]
+                if status in restricted_statuses:
+                    dispatcher.utter_message(
+                        text=(
+                            f"Sorry, the shipping address for order '{order_id}' "
+                            f"cannot be changed because its current status is '{status}'."
+                        )
+                    )
+                    return {"order_id": None}
+                
+                # Validation succeeded, keep the order_id
+                return {"order_id": order_id}
+                
+            elif response.status_code == 404:
+                dispatcher.utter_message(
+                    text=f"Sorry, no order was found with ID '{order_id}'."
                 )
-            )
-            return {"product_name": None}
-
-        # 6. Store matches programmatically so prompt templates can use them,
-        # Rasa will automatically proceed to ask product_confirmed next
-        return {
-            "product_name": matched_product_name,
-            "order_id": order_id
-        }
-
-    def validate_product_confirmed(
-        self,
-        slot_value: Any,
-        dispatcher: CollectingDispatcher,
-        tracker: Tracker,
-        domain: dict[str, Any],
-    ) -> dict[str, Any]:
-        """Handles confirmation logic for the product name."""
-        if slot_value is True:
-            # User confirmed, proceed to address slot
-            return {"product_confirmed": True}
-        else:
-            # User denied, prompt again for product name and reset slots
+                return {"order_id": None}
+            else:
+                dispatcher.utter_message(
+                    text=f"Error validating order ID (Server returned code {response.status_code})."
+                )
+                return {"order_id": None}
+                
+        except requests.RequestException as e:
+            print(f"Rasa Action validation API error: {e}")
             dispatcher.utter_message(
-                text="Okay, please let me know the correct product name."
+                text="Error contacting the server for order validation. Please try again later."
             )
-            return {
-                "product_name": None,
-                "order_id": None,
-                "product_confirmed": None
-            }
+            return {"order_id": None}
