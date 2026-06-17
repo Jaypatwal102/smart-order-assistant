@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import uuid
 
 from app.core.database import get_db
-from app.models.orders import Order
+from app.models.orders import Order, ShippingLog
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -171,7 +171,18 @@ def update_order_address(order_id: str, payload: AddressUpdate, db: Session = De
             detail=f"Order '{order_id}' not found."
         )
 
+    old_address = db_order.shipping_address
     db_order.shipping_address = payload.new_address
+    
+    # Create ShippingLog entry
+    shipping_log = ShippingLog(
+        user_id=db_order.user_id,
+        order_id=db_order.order_id,
+        old_shipping_add=old_address,
+        new_shipping_add=payload.new_address
+    )
+    db.add(shipping_log)
+    
     db.commit()
     db.refresh(db_order)
 

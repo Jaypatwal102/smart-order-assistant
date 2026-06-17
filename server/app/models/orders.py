@@ -60,3 +60,40 @@ class Order(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="orders")
+    shipping_logs: Mapped[list["ShippingLog"]] = relationship(
+        back_populates="order",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+
+class ShippingLog(Base):
+    __tablename__ = "shipping_logs"
+
+    log_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("orders.order_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    old_shipping_add: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    new_shipping_add: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    changed_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        nullable=False,
+        server_default=func.now(),
+    )
+
+    order: Mapped["Order"] = relationship(back_populates="shipping_logs")

@@ -14,6 +14,7 @@ intents:
 entities:
   - order_id
   - product_name
+  - new_address
 
 actions:
   - action_submit_shipping_update
@@ -52,7 +53,6 @@ slots:
         value: false
         intent: deny
 
-  # We will store the entire user message as the address
   new_address:
     type: text
     mappings:

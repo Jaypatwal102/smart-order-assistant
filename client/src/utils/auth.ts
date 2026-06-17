@@ -76,3 +76,25 @@ export async function sendMessage(token: string, text: string, conversationId: s
 
   return response.json();
 }
+
+export async function sendAudioMessage(token: string, audioBlob: Blob, conversationId: string | null = null) {
+  const formData = new FormData();
+  formData.append("audio", audioBlob, "recording.webm");
+  if (conversationId) {
+    formData.append("conversation_id", conversationId);
+  }
+  
+  const response = await fetch(`${API_URL}/conversations/audio`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send audio message");
+  }
+
+  return response.json();
+}
