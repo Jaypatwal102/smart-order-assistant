@@ -1,6 +1,7 @@
 from typing import Any
 import os
 import requests
+import re
 
 from rasa_sdk import Action, Tracker, FormValidationAction
 from rasa_sdk.events import AllSlotsReset
@@ -147,3 +148,41 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
                 text="Error contacting the server for order validation. Please try again later."
             )
             return {"order_id": None}
+
+    def validate_new_address(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: dict[str, Any],
+    ) -> dict[str, Any]:
+        if not slot_value:
+            return {"new_address": None}
+
+        cleaned_address = str(slot_value).strip()
+
+        # Remove common prefixes
+        cleaned_address = re.sub(
+            r"^(my\s+new\s+shipping\s+address\s+is|"
+            r"my\s+shipping\s+address\s+is|"
+            r"my\s+new\s+address\s+is|"
+            r"my\s+address\s+is|"
+            r"new\s+address\s+is|"
+            r"address\s+is|"
+            r"change\s+it\s+to|"
+            r"change\s+my\s+address\s+to|"
+            r"change\s+my\s+shipping\s+address\s+to|"
+            r"update\s+it\s+to|"
+            r"update\s+my\s+address\s+to|"
+            r"update\s+my\s+shipping\s+address\s+to|"
+            r"please\s+update\s+it\s+to|"
+            r"deliver\s+it\s+to|"
+            r"ship\s+it\s+to|"
+            r"send\s+it\s+to)\s*",
+            "",
+            cleaned_address,
+            flags=re.IGNORECASE,
+        )
+
+        cleaned_address = cleaned_address.strip(" :,")
+        return {"new_address": cleaned_address}
