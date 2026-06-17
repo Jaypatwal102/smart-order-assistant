@@ -88,8 +88,16 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
         if not order_id:
             return {"order_id": None}
 
-        # Strip any single/double quotes
-        order_id = str(order_id).strip('"').strip("'")
+        # Use regex to extract UUID from the text
+        match = re.search(r'[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}', str(order_id))
+        if match:
+            order_id = match.group(0)
+        else:
+            dispatcher.utter_message(
+                text="I couldn't find a valid order ID in your message. Please provide the exact order ID."
+            )
+            return {"order_id": None}
+            
         user_id = tracker.get_slot("user_id")
 
         if not user_id:
