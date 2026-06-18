@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   MessageSquare, Plus, Headphones, ChevronDown, 
-  ShoppingBag, Sun, Mic, ArrowUp, Sparkles, Check, Edit2 
+  ShoppingBag, Sun, Moon, Mic, ArrowUp, Sparkles, Check, Edit2 
 } from 'lucide-react';
 import styles from './support.module.css';
 import { getCurrentUser, logoutUser, sendMessage, sendAudioMessage } from '@/utils/auth';
@@ -21,6 +21,7 @@ export default function SupportPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isLightMode, setIsLightMode] = useState(false);
 
   const [allConversations, setAllConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -247,7 +248,7 @@ export default function SupportPage() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isLightMode ? styles.lightMode : ''}`}>
       {/* Sidebar */}
       <div className={styles.sidebar}>
         <div className={styles.logo}>SOA</div>
@@ -341,11 +342,11 @@ export default function SupportPage() {
             <Sparkles size={20} color="#7c5dfa" /> AI Support Assistant
           </div>
           <div className={styles.headerActions}>
-            <button className={styles.viewOrdersBtn}>
+            <button className={styles.viewOrdersBtn} onClick={() => router.push('/orders')}>
               <ShoppingBag size={16} /> View Orders
             </button>
-            <button className={styles.iconBtn}>
-              <Sun size={18} />
+            <button className={styles.iconBtn} onClick={() => setIsLightMode(!isLightMode)}>
+              {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
             </button>
           </div>
         </div>

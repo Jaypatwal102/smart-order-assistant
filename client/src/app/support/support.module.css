@@ -481,3 +481,106 @@
     display: none;
   }
 }
+
+/* Light Mode Overrides */
+.lightMode {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.lightMode .sidebar {
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+}
+
+.lightMode .historyItem {
+  color: #1f2937;
+}
+
+.lightMode .historyItem:hover {
+  background-color: #f3f4f6;
+}
+
+.lightMode .historyTitle, .lightMode .historyTime {
+  color: #6b7280;
+}
+
+.lightMode .helpCard {
+  background-color: #f9fafb;
+}
+
+.lightMode .helpSubtitle {
+  color: #6b7280;
+}
+
+.lightMode .contactBtn {
+  background-color: #ffffff;
+  color: #1f2937;
+  border-color: #e5e7eb;
+}
+
+.lightMode .contactBtn:hover {
+  background-color: #f3f4f6;
+}
+
+.lightMode .userProfile {
+  border-top-color: #e5e7eb;
+}
+
+.lightMode .userAvatar {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.lightMode .userEmail {
+  color: #6b7280;
+}
+
+.lightMode .mainArea {
+  background-color: #f3f4f6;
+}
+
+.lightMode .header {
+  border-bottom-color: #e5e7eb;
+}
+
+.lightMode .viewOrdersBtn, .lightMode .iconBtn {
+  color: #1f2937;
+  border-color: #d1d5db;
+}
+
+.lightMode .viewOrdersBtn:hover, .lightMode .iconBtn:hover {
+  background-color: #e5e7eb;
+}
+
+.lightMode .messageRow.ai .messageBubble {
+  background-color: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.lightMode .messageRow.user .messageTime {
+  color: #6b7280;
+}
+
+.lightMode .inputContainer {
+  background-color: #ffffff;
+  border-color: #d1d5db;
+}
+
+.lightMode .chatInput {
+  color: #1f2937;
+}
+
+.lightMode .chatInput::placeholder {
+  color: #9ca3af;
+}
+
+.lightMode .orderCard {
+  background-color: #ffffff;
+  border-color: #e5e7eb;
+}
+
+.lightMode .orderCardDetails {
+  color: #6b7280;
+}
