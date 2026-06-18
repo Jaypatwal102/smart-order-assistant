@@ -250,7 +250,7 @@ export default function SupportPage() {
     <div className={styles.container}>
       {/* Sidebar */}
       <div className={styles.sidebar}>
-        <div className={styles.logo}>AMU</div>
+        <div className={styles.logo}>SOA</div>
         
         <button className={styles.newChatBtn} onClick={() => {
           setActiveConversationId(null);

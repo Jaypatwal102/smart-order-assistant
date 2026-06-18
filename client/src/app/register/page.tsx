@@ -39,7 +39,7 @@ export default function RegisterPage() {
         <div className={styles.leftSideOverlay} />
         <div className={styles.leftSideContent}>
           <div className={styles.header}>
-            <div className={styles.logo}>AMU</div>
+            <div className={styles.logo}>SOA</div>
             <Link href="/" className={styles.backLink}>
               Back to website <span>→</span>
             </Link>
@@ -47,7 +47,7 @@ export default function RegisterPage() {
           
           <div className={styles.testimonial}>
             <h2 className={styles.testimonialText}>
-              Capturing Moments,<br />Creating Memories
+              Always happy to help
             </h2>
             <div className={styles.carouselIndicators}>
               <div className={`${styles.indicator} ${styles.active}`}></div>

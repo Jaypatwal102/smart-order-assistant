@@ -194,3 +194,31 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
 
         cleaned_address = cleaned_address.strip(" :,")
         return {"new_address": cleaned_address}
+
+    def validate_confirm_order_id(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: dict[str, Any],
+    ) -> dict[str, Any]:
+        if slot_value is True:
+            return {"confirm_order_id": True}
+        elif slot_value is False:
+            dispatcher.utter_message(text="Okay, let's try again.")
+            return {"order_id": None, "confirm_order_id": None}
+        return {"confirm_order_id": None}
+
+    def validate_confirm_address(
+        self,
+        slot_value: Any,
+        dispatcher: CollectingDispatcher,
+        tracker: Tracker,
+        domain: dict[str, Any],
+    ) -> dict[str, Any]:
+        if slot_value is True:
+            return {"confirm_address": True}
+        elif slot_value is False:
+            dispatcher.utter_message(text="Okay, let's try again.")
+            return {"new_address": None, "confirm_address": None}
+        return {"confirm_address": None}
