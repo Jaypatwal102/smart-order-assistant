@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Intent Classification Service")
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "qwen3:4b"
+MODEL_NAME = "gemma3:4b"
 
 class ChatRequest(BaseModel):
     message: str
