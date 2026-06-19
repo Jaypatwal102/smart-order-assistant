@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Intent Classification Service")
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "qwen3:4b"
+#MODEL_NAME = "qwen3:4b"
+MODEL_NAME = "gemma3:4b"
 
 class ChatRequest(BaseModel):
     message: str
@@ -23,6 +24,8 @@ class ChatResponse(BaseModel):
 
 SYSTEM_PROMPT = """You are an intent classification service for a customer support chatbot.
 Analyze the user message and classify it into exactly one of these intents:
+You need to multilingual support for languages English, French, Russian, Hindi.
+
 - greeting (e.g. "hi", "hello", "good morning")
 - shipping_address_update (e.g. "update my shipping address")
 - order_issue (e.g. "received the wrong product", "recommend another product", "cancel my order")
