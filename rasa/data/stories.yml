@@ -8,5 +8,4 @@ stories:
       - active_loop: shipping_address_update_form
 
       - active_loop: null
-
-      - action: utter_confirm_update
+      - action: action_submit_shipping_update
