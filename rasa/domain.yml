@@ -61,11 +61,47 @@ slots:
           - active_loop: shipping_address_update_form
             requested_slot: new_address
 
+  confirm_order_id:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: from_intent
+        intent: confirm
+        value: true
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: confirm_order_id
+      - type: from_intent
+        intent: deny
+        value: false
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: confirm_order_id
+
+  confirm_address:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: from_intent
+        intent: confirm
+        value: true
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: confirm_address
+      - type: from_intent
+        intent: deny
+        value: false
+        conditions:
+          - active_loop: shipping_address_update_form
+            requested_slot: confirm_address
+
 forms:
   shipping_address_update_form:
     required_slots:
       - order_id
+      - confirm_order_id
       - new_address
+      - confirm_address
 
 responses:
   utter_greet:
@@ -85,6 +121,12 @@ responses:
 
   utter_ask_new_address:
     - text: "Please provide the new shipping address."
+
+  utter_ask_confirm_order_id:
+    - text: "You entered \"{order_id}\" as your order ID. Enter Yes to confirm or No to Input order ID again."
+
+  utter_ask_confirm_address:
+    - text: "You entered \"{new_address}\" as your new shipping address. Enter Yes to confirm or No to Input address again."
 
   utter_confirm_update:
     - text: "Thank you. Please confirm that you want to update your shipping address. Reply 'Yes' or 'No'."

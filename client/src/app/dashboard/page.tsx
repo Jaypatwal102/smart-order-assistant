@@ -52,7 +52,7 @@ export default function DashboardPage() {
   return (
     <div className={styles.container}>
       <aside className={styles.sidebar}>
-        <div className={styles.logo}>AMU Dashboard</div>
+        <div className={styles.logo}>SOA Dashboard</div>
         
         <nav className={styles.nav}>
           <Link href="/dashboard" className={`${styles.navItem} ${styles.active}`}>

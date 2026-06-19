@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   MessageSquare, Plus, Headphones, ChevronDown, 
-  ShoppingBag, Sun, Mic, ArrowUp, Sparkles, Check, Edit2 
+  ShoppingBag, Sun, Moon, Mic, ArrowUp, Sparkles, Check, Edit2 
 } from 'lucide-react';
 import styles from './support.module.css';
 import { getCurrentUser, logoutUser, sendMessage, sendAudioMessage } from '@/utils/auth';
@@ -21,6 +21,7 @@ export default function SupportPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isLightMode, setIsLightMode] = useState(false);
 
   const [allConversations, setAllConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -140,30 +141,40 @@ export default function SupportPage() {
 
       const updatedConv = await sendMessage(token, userText, activeConversationId);
       
-      // Update the active conversation ID in case it was a new conversation
-      setActiveConversationId(updatedConv.id);
+      if (updatedConv.messages) {
+        // Normal conversation update
+        setActiveConversationId(updatedConv.id);
+        const formattedMsgs = updatedConv.messages.map((m: any) => ({
+          id: m.id,
+          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+          text: m.message_text,
+          time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+        }));
+        setMessages(formattedMsgs);
 
-      // Map messages back to UI format
-      const formattedMsgs = updatedConv.messages.map((m: any) => ({
-        id: m.id,
-        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
-        text: m.message_text,
-        time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
-      }));
-
-      setMessages(formattedMsgs);
-
-      // Update allConversations in Sidebar
-      setAllConversations(prev => {
-        const index = prev.findIndex(c => c.id === updatedConv.id);
-        if (index >= 0) {
-          const newAll = [...prev];
-          newAll[index] = updatedConv;
-          return newAll;
-        } else {
-          return [updatedConv, ...prev];
-        }
-      });
+        setAllConversations(prev => {
+          const index = prev.findIndex(c => c.id === updatedConv.id);
+          if (index >= 0) {
+            const newAll = [...prev];
+            newAll[index] = updatedConv;
+            return newAll;
+          } else {
+            return [updatedConv, ...prev];
+          }
+        });
+      } else {
+        // Raw JSON classification response
+        const subIntents = updatedConv.sub_intents && updatedConv.sub_intents.length > 0 
+          ? updatedConv.sub_intents.join(', ') 
+          : 'None';
+          
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          sender: 'ai',
+          text: `[Classification] Intent: ${updatedConv.intent} | Sub-intents: ${subIntents} | Confidence: ${updatedConv.confidence}%`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+      }
     } catch (err) {
       console.error("Failed to send message", err);
     } finally {
@@ -212,27 +223,39 @@ export default function SupportPage() {
       if (!token) throw new Error("No token found");
 
       const updatedConv = await sendAudioMessage(token, audioBlob, activeConversationId);
-      setActiveConversationId(updatedConv.id);
+      
+      if (updatedConv.messages) {
+        setActiveConversationId(updatedConv.id);
+        const formattedMsgs = updatedConv.messages.map((m: any) => ({
+          id: m.id,
+          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+          text: m.message_text,
+          time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+        }));
+        setMessages(formattedMsgs);
 
-      const formattedMsgs = updatedConv.messages.map((m: any) => ({
-        id: m.id,
-        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
-        text: m.message_text,
-        time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
-      }));
-
-      setMessages(formattedMsgs);
-
-      setAllConversations(prev => {
-        const index = prev.findIndex(c => c.id === updatedConv.id);
-        if (index >= 0) {
-          const newAll = [...prev];
-          newAll[index] = updatedConv;
-          return newAll;
-        } else {
-          return [updatedConv, ...prev];
-        }
-      });
+        setAllConversations(prev => {
+          const index = prev.findIndex(c => c.id === updatedConv.id);
+          if (index >= 0) {
+            const newAll = [...prev];
+            newAll[index] = updatedConv;
+            return newAll;
+          } else {
+            return [updatedConv, ...prev];
+          }
+        });
+      } else {
+        const subIntents = updatedConv.sub_intents && updatedConv.sub_intents.length > 0 
+          ? updatedConv.sub_intents.join(', ') 
+          : 'None';
+          
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          sender: 'ai',
+          text: `[Classification] Intent: ${updatedConv.intent} | Sub-intents: ${subIntents} | Confidence: ${updatedConv.confidence}%`,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+      }
     } catch (err) {
       console.error("Failed to send audio message", err);
     } finally {
@@ -247,10 +270,10 @@ export default function SupportPage() {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isLightMode ? styles.lightMode : ''}`}>
       {/* Sidebar */}
       <div className={styles.sidebar}>
-        <div className={styles.logo}>AMU</div>
+        <div className={styles.logo}>SOA</div>
         
         <button className={styles.newChatBtn} onClick={() => {
           setActiveConversationId(null);
@@ -341,11 +364,11 @@ export default function SupportPage() {
             <Sparkles size={20} color="#7c5dfa" /> AI Support Assistant
           </div>
           <div className={styles.headerActions}>
-            <button className={styles.viewOrdersBtn}>
+            <button className={styles.viewOrdersBtn} onClick={() => router.push('/orders')}>
               <ShoppingBag size={16} /> View Orders
             </button>
-            <button className={styles.iconBtn}>
-              <Sun size={18} />
+            <button className={styles.iconBtn} onClick={() => setIsLightMode(!isLightMode)}>
+              {isLightMode ? <Moon size={18} /> : <Sun size={18} />}
             </button>
           </div>
         </div>

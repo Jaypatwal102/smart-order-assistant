@@ -15,6 +15,36 @@ from app.models.conversations import Conversation, Message
 from app.schemas.conversations import MessageCreate, ConversationUpdate
 from app.routers.auth import get_current_user, oauth2_scheme
 
+def _classify_message(message_text: str) -> dict:
+    try:
+        ai_res = requests.post(
+            "http://localhost:8001/chat",
+            json={"message": message_text},
+            timeout=120
+        )
+        if ai_res.status_code == 200:
+            return ai_res.json()
+    except Exception as e:
+        print(f"AI Service communication error: {e}")
+    return {"intent": "unknown", "sub_intents": [], "confidence": 0}
+
+def _is_rasa_active(conversation_id: str) -> bool:
+    try:
+        tracker_url = f"{RASA_URL}/conversations/{conversation_id}/tracker"
+        res = requests.get(tracker_url, timeout=5)
+        if res.status_code == 200:
+            tracker = res.json()
+            if tracker.get("active_loop", {}).get("name"):
+                return True
+            for event in reversed(tracker.get("events", [])):
+                if event.get("event") == "action" and event.get("name") != "action_listen":
+                    if event.get("name") in ["utter_confirm_update", "shipping_address_update_form"]:
+                        return True
+                    break
+    except Exception as e:
+        print(f"Failed to fetch Rasa tracker: {e}")
+    return False
+
 def _forward_message_to_rasa(conversation_id: str, user_id: str, message_text: str, db: Session):
     bot_responses = []
     request_failed = False
@@ -129,8 +159,29 @@ def send_message(
     )
     db.add(user_msg)
     
-    # Forward user_id and message to Rasa
-    _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), msg_in.message_text, db)
+    if _is_rasa_active(str(conversation_id)):
+        _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), msg_in.message_text, db)
+    else:
+        # Classify message intent first
+        classification = _classify_message(msg_in.message_text)
+        intent = classification.get("intent")
+        sub_intents_str = ", ".join(classification.get("sub_intents", [])) or "None"
+        
+        if intent == "shipping_address_update":
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db)
+        elif intent == "greeting":
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            bot_msg = Message(
+                conversation_id=conversation_id,
+                sender_type="bot",
+                message_text="Hello! How can I help you today?"
+            )
+            db.add(bot_msg)
+        else:
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            db.commit()
+            return classification
         
     db.commit()
     
@@ -217,8 +268,29 @@ def send_audio(
     )
     db.add(user_msg)
     
-    # Forward user_id and transcribed message to Rasa
-    _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), transcribed_text, db)
+    if _is_rasa_active(str(conversation_id)):
+        _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), transcribed_text, db)
+    else:
+        # Classify message intent first
+        classification = _classify_message(transcribed_text)
+        intent = classification.get("intent")
+        sub_intents_str = ", ".join(classification.get("sub_intents", [])) or "None"
+        
+        if intent == "shipping_address_update":
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db)
+        elif intent == "greeting":
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            bot_msg = Message(
+                conversation_id=conversation_id,
+                sender_type="bot",
+                message_text="Hello! How can I help you today?"
+            )
+            db.add(bot_msg)
+        else:
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            db.commit()
+            return classification
     
     db.commit()
     

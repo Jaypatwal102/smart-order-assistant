@@ -1,0 +1,238 @@
+.container {
+  min-height: 100vh;
+  background-color: #1a1921;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.loadingContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1921;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(129, 140, 248, 0.2);
+  border-top-color: #818cf8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.header {
+  background-color: #15141c;
+  border-bottom: 1px solid #2e2d35;
+  padding: 2rem;
+}
+
+.headerContent {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #a09fa5;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.backBtn:hover {
+  color: #ffffff;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: #a09fa5;
+  font-size: 1rem;
+}
+
+.mainContent {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  color: #a09fa5;
+  background-color: #24232a;
+  border-radius: 12px;
+  border: 1px dashed #3b3a42;
+}
+
+.ordersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.orderCard {
+  background-color: #24232a;
+  border: 1px solid #3b3a42;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.orderCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  border-color: #4b4a54;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid #3b3a42;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.orderId {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #a09fa5;
+  font-family: monospace;
+}
+
+.orderIdContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.copyBtn {
+  background: transparent;
+  border: none;
+  color: #a09fa5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.copyBtn:hover {
+  background-color: rgba(124, 93, 250, 0.1);
+  color: #7c5dfa;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.defaultStatus {
+  background-color: rgba(160, 159, 165, 0.2);
+  color: #a09fa5;
+}
+
+.pending {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.processing {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+.dispatched {
+  background-color: rgba(139, 92, 246, 0.2);
+  color: #8b5cf6;
+}
+
+.outfordelivery {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.delivered {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+.cardBody {
+  padding: 1.5rem 1.25rem;
+  flex: 1;
+}
+
+.productName {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  color: #ffffff;
+}
+
+.detailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.detailItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+.detailIcon {
+  color: #7c5dfa;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.cardFooter {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid #3b3a42;
+}
+
+.actionBtn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: transparent;
+  border: 1px solid #7c5dfa;
+  color: #7c5dfa;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionBtn:hover {
+  background-color: rgba(124, 93, 250, 0.1);
+}

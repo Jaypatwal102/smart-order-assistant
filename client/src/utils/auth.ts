@@ -98,3 +98,17 @@ export async function sendAudioMessage(token: string, audioBlob: Blob, conversat
 
   return response.json();
 }
+
+export async function getOrders(userId: string) {
+  const response = await fetch(`${API_URL}/orders?user_id=${userId}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch orders");
+  }
+
+  return response.json();
+}
