@@ -15,6 +15,21 @@ from app.models.conversations import Conversation, Message
 from app.schemas.conversations import MessageCreate, ConversationUpdate
 from app.routers.auth import get_current_user, oauth2_scheme
 
+def _translate_text(text: str, target_language: str) -> str:
+    if not target_language or target_language.lower() in ["en", "english"]:
+        return text
+    try:
+        ai_res = requests.post(
+            "http://localhost:8001/translate",
+            json={"text": text, "target_language": target_language},
+            timeout=120
+        )
+        if ai_res.status_code == 200:
+            return ai_res.json().get("translated_text", text)
+    except Exception as e:
+        print(f"AI Service translation error: {e}")
+    return text
+
 def _classify_message(message_text: str) -> dict:
     try:
         ai_res = requests.post(
@@ -45,7 +60,7 @@ def _is_rasa_active(conversation_id: str) -> bool:
         print(f"Failed to fetch Rasa tracker: {e}")
     return False
 
-def _forward_message_to_rasa(conversation_id: str, user_id: str, message_text: str, db: Session):
+def _forward_message_to_rasa(conversation_id: str, user_id: str, message_text: str, db: Session, target_language: str = "English"):
     bot_responses = []
     request_failed = False
     try:
@@ -82,28 +97,31 @@ def _forward_message_to_rasa(conversation_id: str, user_id: str, message_text: s
 
     if request_failed:
         # Fallback if Rasa is offline or threw an error
+        fallback_text = _translate_text("I'm sorry, I am currently offline or experiencing issues. Please try again later.", target_language)
         ai_msg = Message(
             conversation_id=conversation_id,
             sender_type="bot",
-            message_text="I'm sorry, I am currently offline or experiencing issues. Please try again later."
+            message_text=fallback_text
         )
         db.add(ai_msg)
     elif bot_responses:
         for resp in bot_responses:
             text_response = resp.get("text")
             if text_response:
+                translated_text = _translate_text(text_response, target_language)
                 ai_msg = Message(
                     conversation_id=conversation_id,
                     sender_type="bot",
-                    message_text=text_response
+                    message_text=translated_text
                 )
                 db.add(ai_msg)
     else:
         # Fallback if Rasa is online but didn't return a text response
+        fallback_text = _translate_text("I'm sorry, I didn't quite catch that. Could you please rephrase?", target_language)
         ai_msg = Message(
             conversation_id=conversation_id,
             sender_type="bot",
-            message_text="I'm sorry, I didn't quite catch that. Could you please rephrase?"
+            message_text=fallback_text
         )
         db.add(ai_msg)
 
@@ -160,26 +178,33 @@ def send_message(
     db.add(user_msg)
     
     if _is_rasa_active(str(conversation_id)):
-        _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), msg_in.message_text, db)
+        _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), msg_in.message_text, db, conv.detected_language)
     else:
         # Classify message intent first
         classification = _classify_message(msg_in.message_text)
         intent = classification.get("intent")
+        detected_language = classification.get("language", "English")
+        
+        if detected_language.lower() not in ["en", "english"]:
+            conv.detected_language = detected_language
+            
         sub_intents_str = ", ".join(classification.get("sub_intents", [])) or "None"
         
         if intent == "shipping_address_update":
-            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
-            _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db)
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db, conv.detected_language)
         elif intent == "greeting":
-            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            
+            translated_greeting = _translate_text("Hello! How can I help you today?", conv.detected_language)
             bot_msg = Message(
                 conversation_id=conversation_id,
                 sender_type="bot",
-                message_text="Hello! How can I help you today?"
+                message_text=translated_greeting
             )
             db.add(bot_msg)
         else:
-            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             db.commit()
             return classification
         
@@ -269,26 +294,33 @@ def send_audio(
     db.add(user_msg)
     
     if _is_rasa_active(str(conversation_id)):
-        _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), transcribed_text, db)
+        _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), transcribed_text, db, conv.detected_language)
     else:
         # Classify message intent first
         classification = _classify_message(transcribed_text)
         intent = classification.get("intent")
+        detected_language = classification.get("language", "English")
+        
+        if detected_language.lower() not in ["en", "english"]:
+            conv.detected_language = detected_language
+            
         sub_intents_str = ", ".join(classification.get("sub_intents", [])) or "None"
         
         if intent == "shipping_address_update":
-            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
-            _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db)
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db, conv.detected_language)
         elif intent == "greeting":
-            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            
+            translated_greeting = _translate_text("Hello! How can I help you today?", conv.detected_language)
             bot_msg = Message(
                 conversation_id=conversation_id,
                 sender_type="bot",
-                message_text="Hello! How can I help you today?"
+                message_text=translated_greeting
             )
             db.add(bot_msg)
         else:
-            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}%"))
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             db.commit()
             return classification
     
