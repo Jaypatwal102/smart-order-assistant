@@ -15,13 +15,20 @@ from app.models.conversations import Conversation, Message
 from app.schemas.conversations import MessageCreate, ConversationUpdate
 from app.routers.auth import get_current_user, oauth2_scheme
 
-def _translate_text(text: str, target_language: str) -> str:
-    if not target_language or target_language.lower() in ["en", "english"]:
+def _translate_text(text: str, target_language: str, source_language: Optional[str] = None) -> str:
+    if not target_language:
+        return text
+    if source_language and target_language.lower() == source_language.lower():
+        return text
+    if target_language.lower() in ["en", "english"] and (source_language is None or source_language.lower() in ["en", "english"]):
         return text
     try:
+        payload = {"text": text, "target_language": target_language}
+        if source_language:
+            payload["source_language"] = source_language
         ai_res = requests.post(
             "http://localhost:8001/translate",
-            json={"text": text, "target_language": target_language},
+            json=payload,
             timeout=120
         )
         if ai_res.status_code == 200:
@@ -30,11 +37,11 @@ def _translate_text(text: str, target_language: str) -> str:
         print(f"AI Service translation error: {e}")
     return text
 
-def _classify_message(message_text: str) -> dict:
+def _classify_message(message_text: str, conversation_id: str = None) -> dict:
     try:
         ai_res = requests.post(
             "http://localhost:8001/chat",
-            json={"message": message_text},
+            json={"message": message_text, "conversation_id": conversation_id},
             timeout=120
         )
         if ai_res.status_code == 200:
@@ -76,13 +83,20 @@ def _forward_message_to_rasa(conversation_id: str, user_id: str, message_text: s
             timeout=5
         )
         
+        # Translate message to English for Rasa NLU if user's language is not English
+        rasa_message = message_text
+        if target_language and target_language.lower() not in ["en", "english"]:
+            # Only translate if it's not a slash command / intent payload (starts with /)
+            if not message_text.startswith("/"):
+                rasa_message = _translate_text(message_text, "English", source_language=target_language)
+                
         # 2. Post the user message to Rasa REST webhook
         webhook_url = f"{RASA_URL}/webhooks/rest/webhook"
         rasa_res = requests.post(
             webhook_url,
             json={
                 "sender": str(conversation_id),
-                "message": message_text
+                "message": rasa_message
             },
             timeout=10
         )
@@ -181,7 +195,7 @@ def send_message(
         _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), msg_in.message_text, db, conv.detected_language)
     else:
         # Classify message intent first
-        classification = _classify_message(msg_in.message_text)
+        classification = _classify_message(msg_in.message_text, str(conversation_id))
         intent = classification.get("intent")
         detected_language = classification.get("language", "English")
         
@@ -297,7 +311,7 @@ def send_audio(
         _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), transcribed_text, db, conv.detected_language)
     else:
         # Classify message intent first
-        classification = _classify_message(transcribed_text)
+        classification = _classify_message(transcribed_text, str(conversation_id))
         intent = classification.get("intent")
         detected_language = classification.get("language", "English")
         
