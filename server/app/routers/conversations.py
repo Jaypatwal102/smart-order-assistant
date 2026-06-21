@@ -233,7 +233,6 @@ def send_message(
                 translated_reply = _translate_text(bot_reply, conv.detected_language)
                 db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
             db.commit()
-            return classification
         
     db.commit()
     
@@ -359,7 +358,6 @@ def send_audio(
                 translated_reply = _translate_text(bot_reply, conv.detected_language)
                 db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
             db.commit()
-            return classification
     
     db.commit()
     
