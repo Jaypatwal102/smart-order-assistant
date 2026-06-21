@@ -4,6 +4,13 @@ from app.nodes.processors import process_shipping_update, process_greeting, proc
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
+def start_router(state: AgentState) -> str:
+    intent = state.get("intent")
+    sub_intents = state.get("sub_intents", [])
+    if intent == "order_issue" and "cancel_product" in sub_intents:
+        return "order_issue"
+    return "classify"
+
 def router(state: AgentState) -> str:
     intent = state.get("intent")
     if intent == "shipping_address_update":
@@ -24,7 +31,14 @@ def create_graph():
     workflow.add_node("order_issue", process_order_issue)
     workflow.add_node("default", process_default)
     
-    workflow.add_edge(START, "classify")
+    workflow.add_conditional_edges(
+        START,
+        start_router,
+        {
+            "order_issue": "order_issue",
+            "classify": "classify"
+        }
+    )
     workflow.add_conditional_edges(
         "classify",
         router,

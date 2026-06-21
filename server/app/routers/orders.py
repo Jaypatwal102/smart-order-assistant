@@ -197,3 +197,50 @@ def update_order_address(order_id: str, payload: AddressUpdate, db: Session = De
             "shipping_address": db_order.shipping_address
         }
     }
+
+
+@router.put("/{order_id}/cancel")
+def cancel_order(order_id: str, db: Session = Depends(get_db)):
+    """Cancels the given order in the database."""
+    try:
+        order_uuid = uuid.UUID(order_id.strip('"').strip("'"))
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid order_id format. Must be a valid UUID."
+        )
+
+    db_order = db.query(Order).filter(Order.order_id == order_uuid).first()
+    if not db_order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order '{order_id}' not found."
+        )
+
+    if db_order.status.lower() == "delivered":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Order '{order_id}' cannot be cancelled because it has already been delivered."
+        )
+        
+    if db_order.status.lower() == "cancelled":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Order '{order_id}' is already cancelled."
+        )
+
+    db_order.status = "cancelled"
+    db.commit()
+    db.refresh(db_order)
+
+    return {
+        "status": "success",
+        "message": f"Successfully cancelled order '{order_id}'.",
+        "order": {
+            "order_id": str(db_order.order_id),
+            "user_id": str(db_order.user_id),
+            "status": db_order.status,
+            "product_name": db_order.product_name,
+            "shipping_address": db_order.shipping_address
+        }
+    }

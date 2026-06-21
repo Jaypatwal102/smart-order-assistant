@@ -37,11 +37,14 @@ def _translate_text(text: str, target_language: str, source_language: Optional[s
         print(f"AI Service translation error: {e}")
     return text
 
-def _classify_message(message_text: str, conversation_id: str = None) -> dict:
+def _classify_message(message_text: str, conversation_id: str = None, user_id: str = None) -> dict:
     try:
+        payload = {"message": message_text, "conversation_id": conversation_id}
+        if user_id:
+            payload["user_id"] = user_id
         ai_res = requests.post(
             "http://localhost:8001/chat",
-            json={"message": message_text, "conversation_id": conversation_id},
+            json=payload,
             timeout=120
         )
         if ai_res.status_code == 200:
@@ -195,7 +198,7 @@ def send_message(
         _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), msg_in.message_text, db, conv.detected_language)
     else:
         # Classify message intent first
-        classification = _classify_message(msg_in.message_text, str(conversation_id))
+        classification = _classify_message(msg_in.message_text, str(conversation_id), str(current_user.user_id))
         intent = classification.get("intent")
         detected_language = classification.get("language", "English")
         
@@ -217,8 +220,18 @@ def send_message(
                 message_text=translated_greeting
             )
             db.add(bot_msg)
+        elif intent == "order_issue" and "cancel_product" in classification.get("sub_intents", []):
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            bot_reply = classification.get("bot_response")
+            if bot_reply:
+                translated_reply = _translate_text(bot_reply, conv.detected_language)
+                db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
         else:
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            bot_reply = classification.get("bot_response")
+            if bot_reply:
+                translated_reply = _translate_text(bot_reply, conv.detected_language)
+                db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
             db.commit()
             return classification
         
@@ -311,7 +324,7 @@ def send_audio(
         _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), transcribed_text, db, conv.detected_language)
     else:
         # Classify message intent first
-        classification = _classify_message(transcribed_text, str(conversation_id))
+        classification = _classify_message(transcribed_text, str(conversation_id), str(current_user.user_id))
         intent = classification.get("intent")
         detected_language = classification.get("language", "English")
         
@@ -333,8 +346,18 @@ def send_audio(
                 message_text=translated_greeting
             )
             db.add(bot_msg)
+        elif intent == "order_issue" and "cancel_product" in classification.get("sub_intents", []):
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            bot_reply = classification.get("bot_response")
+            if bot_reply:
+                translated_reply = _translate_text(bot_reply, conv.detected_language)
+                db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
         else:
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
+            bot_reply = classification.get("bot_response")
+            if bot_reply:
+                translated_reply = _translate_text(bot_reply, conv.detected_language)
+                db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
             db.commit()
             return classification
     
