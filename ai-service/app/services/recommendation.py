@@ -1,0 +1,86 @@
+import logging
+import requests
+from typing import List, Dict, Any
+from langchain_core.documents import Document
+from langchain_core.vectorstores import InMemoryVectorStore
+from app.llm.ollama import get_embeddings
+
+logger = logging.getLogger(__name__)
+
+
+def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[str, Any]]:
+    """
+    Fetch all active products from the server catalog, embed them in an
+    InMemoryVectorStore, and perform a semantic search to recommend similar products.
+    """
+    try:
+        url = "http://localhost:8000/products"
+        resp = requests.get(url, timeout=5)
+        if resp.status_code != 200:
+            logger.error(f"Failed to fetch products from catalog: {resp.status_code}")
+            return []
+
+        all_products = resp.json()
+        if not all_products:
+            logger.warning("Product catalog is empty.")
+            return []
+
+        # Find the target product to get its category/description if available
+        target_product = None
+        for p in all_products:
+            if p["name"].lower() == product_name.lower():
+                target_product = p
+                break
+
+        # Prepare search query
+        if target_product:
+            search_query = f"Category: {target_product['category']}. Description: {target_product['description']}"
+        else:
+            search_query = product_name
+
+        # Filter out the current product from recommendations index
+        index_products = [
+            p for p in all_products
+            if p["name"].lower() != product_name.lower()
+        ]
+
+        if not index_products:
+            return []
+
+        # Create documents
+        docs = []
+        for p in index_products:
+            doc_text = f"Product Name: {p['name']}. Category: {p['category']}. Description: {p['description']}"
+            docs.append(Document(
+                page_content=doc_text,
+                metadata={
+                    "product_id": p["product_id"],
+                    "name": p["name"],
+                    "category": p["category"],
+                    "price": p["price"]
+                }
+            ))
+
+        # Create vector store in memory and add documents
+        embeddings = get_embeddings()
+        vector_store = InMemoryVectorStore(embeddings)
+        vector_store.add_documents(docs)
+
+        # Perform similarity search
+        results = vector_store.similarity_search(search_query, k=limit)
+
+        # Format output
+        recommendations = []
+        for doc in results:
+            recommendations.append({
+                "product_id": doc.metadata["product_id"],
+                "name": doc.metadata["name"],
+                "category": doc.metadata["category"],
+                "price": doc.metadata["price"]
+            })
+
+        return recommendations
+
+    except Exception as e:
+        logger.error(f"Error during recommendation lookup: {e}")
+        return []

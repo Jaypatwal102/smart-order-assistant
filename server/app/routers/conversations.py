@@ -233,7 +233,7 @@ def send_message(
                 message_text=translated_greeting
             )
             db.add(bot_msg)
-        elif intent == "order_issue" and ("cancel_product" in classification.get("sub_intents", []) or "refund" in classification.get("sub_intents", [])):
+        elif intent == "order_issue" and ("cancel_product" in classification.get("sub_intents", []) or "replace_product" in classification.get("sub_intents", []) or "refund" in classification.get("sub_intents", [])):
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             bot_reply = classification.get("bot_response")
             if bot_reply:
@@ -371,7 +371,7 @@ def send_audio(
                 message_text=translated_greeting
             )
             db.add(bot_msg)
-        elif intent == "order_issue" and ("cancel_product" in classification.get("sub_intents", []) or "refund" in classification.get("sub_intents", [])):
+        elif intent == "order_issue" and ("cancel_product" in classification.get("sub_intents", []) or "replace_product" in classification.get("sub_intents", []) or "refund" in classification.get("sub_intents", [])):
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             bot_reply = classification.get("bot_response")
             if bot_reply:

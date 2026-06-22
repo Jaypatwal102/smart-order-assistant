@@ -20,6 +20,11 @@ class AddressUpdate(BaseModel):
     new_address: str
 
 
+class OrderReplace(BaseModel):
+    replacement_product_name: str | None = None
+
+
+
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
     """Creates a new order in the database."""
@@ -310,3 +315,76 @@ def process_refund(order_id: str, db: Session = Depends(get_db)):
             "total_amount": float(db_order.total_amount)
         }
     }
+
+
+@router.post("/{order_id}/replace")
+def replace_order(order_id: str, payload: OrderReplace, db: Session = Depends(get_db)):
+    """Processes a replacement/exchange for the given order."""
+    try:
+        order_uuid = uuid.UUID(order_id.strip('"').strip("'"))
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid order_id format. Must be a valid UUID."
+        )
+
+    db_order = db.query(Order).filter(Order.order_id == order_uuid).first()
+    if not db_order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order '{order_id}' not found."
+        )
+
+    if db_order.status.lower() in ["replaced", "refunded", "cancelled"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Order '{order_id}' cannot be replaced because its status is '{db_order.status}'."
+        )
+
+    old_status = db_order.status
+    db_order.status = "replaced"
+    
+    update_log = OrderUpdateLog(
+        order_id=db_order.order_id,
+        old_status=old_status,
+        new_status="replaced",
+        reason="Replacement/exchange processed via AI agent"
+    )
+    db.add(update_log)
+    
+    # Determine the product to reorder
+    prod_name = payload.replacement_product_name or db_order.product_name
+    from app.models.products import Product
+    product = db.query(Product).filter(Product.name.ilike(f"%{prod_name}%")).first()
+    
+    # Create the new replacement order
+    new_order = Order(
+        user_id=db_order.user_id,
+        product_name=product.name if product else prod_name,
+        product_id=product.product_id if product else db_order.product_id,
+        total_amount=product.price if product else db_order.total_amount,
+        shipping_address=db_order.shipping_address,
+        status="pending"
+    )
+    db.add(new_order)
+    db.commit()
+    db.refresh(new_order)
+    db.refresh(db_order)
+
+    return {
+        "status": "success",
+        "message": f"Successfully processed replacement for order '{order_id}'.",
+        "new_order_id": str(new_order.order_id),
+        "order": {
+            "order_id": str(db_order.order_id),
+            "status": db_order.status,
+            "product_name": db_order.product_name
+        },
+        "new_order": {
+            "order_id": str(new_order.order_id),
+            "status": new_order.status,
+            "product_name": new_order.product_name,
+            "total_amount": float(new_order.total_amount)
+        }
+    }
+

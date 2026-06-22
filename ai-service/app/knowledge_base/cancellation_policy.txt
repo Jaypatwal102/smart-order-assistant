@@ -1,0 +1,9 @@
+SMART ORDER ASSISTANT - CANCELLATION POLICY
+
+An order cancellation request may only be approved if the following conditions are satisfied:
+
+1. The order status must not be "delivered". Delivered orders cannot be cancelled and must follow the refund or replacement process.
+2. The order status must not already be "cancelled" or "refunded".
+3. A valid order ID exists and the order belongs to the requesting customer.
+
+If eligible, the order status will be updated to "cancelled" in the database.

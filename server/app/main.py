@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, orders, conversations, handoff
+from app.routers import auth, orders, conversations, handoff, products
 from app.core.database import create_tables
 from fastapi.staticfiles import StaticFiles
 import os
@@ -24,6 +24,7 @@ app.include_router(auth.router)
 app.include_router(conversations.router)
 app.include_router(orders.router)
 app.include_router(handoff.router)
+app.include_router(products.router)
 
 @app.get("/")
 def root():

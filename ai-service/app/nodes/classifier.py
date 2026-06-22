@@ -47,9 +47,28 @@ def classify_node(state: AgentState) -> dict:
             "message": state["message"],
             "format_instructions": parser.get_format_instructions()
         })
+        
+        intent = res.get("intent", "unknown")
+        sub_intents = list(res.get("sub_intents") or [])
+        msg_lower = state["message"].lower()
+        
+        # Rule-based programmatic fallbacks to ensure robust sub_intent classification
+        if "replace" in msg_lower or "exchange" in msg_lower:
+            intent = "order_issue"
+            if "replace_product" not in sub_intents:
+                sub_intents.append("replace_product")
+        if "cancel" in msg_lower:
+            intent = "order_issue"
+            if "cancel_product" not in sub_intents:
+                sub_intents.append("cancel_product")
+        if "refund" in msg_lower:
+            intent = "order_issue"
+            if "refund" not in sub_intents:
+                sub_intents.append("refund")
+                
         return {
-            "intent": res.get("intent", "unknown"),
-            "sub_intents": res.get("sub_intents", []),
+            "intent": intent,
+            "sub_intents": sub_intents,
             "confidence": res.get("confidence", 0),
             "language": res.get("language", "English")
         }

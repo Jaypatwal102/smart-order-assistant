@@ -1,0 +1,15 @@
+SMART ORDER ASSISTANT - REPLACEMENT POLICY
+
+A product replacement/exchange request may only be approved if the following conditions are satisfied:
+
+1. The product was delivered to the customer.
+2. The request is submitted within 7 days of delivery.
+3. The product was damaged, defective, or incorrect.
+4. The order status must not be "cancelled" or "refunded".
+5. The order belongs to the requesting customer.
+
+If eligible, the customer can choose between:
+- A replacement for the same item.
+- An exchange for a similar alternative product from our catalog.
+
+If a replacement is processed, the original order status is updated to "replaced" and a new order for the replacement item will be created in the database.

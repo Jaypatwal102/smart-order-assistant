@@ -10,6 +10,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
+from app.models.products import Product
+
 if TYPE_CHECKING:
     from app.models.users import User
 
@@ -35,6 +37,11 @@ class Order(Base):
     )
     product_name: Mapped[str | None] = mapped_column(
         String(255),
+        nullable=True,
+    )
+    product_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("products.product_id", ondelete="SET NULL"),
         nullable=True,
     )
     shipping_address: Mapped[str | None] = mapped_column(
@@ -68,6 +75,7 @@ class Order(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="orders")
+    product: Mapped[Product | None] = relationship(back_populates="orders")
     shipping_logs: Mapped[list["ShippingLog"]] = relationship(
         back_populates="order",
         cascade="all, delete-orphan",

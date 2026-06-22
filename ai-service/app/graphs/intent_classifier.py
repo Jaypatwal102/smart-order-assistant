@@ -1,19 +1,46 @@
 from app.models.state import AgentState
 from app.nodes.classifier import classify_node
-from app.nodes.processors import process_shipping_update, process_greeting, process_order_issue, process_refund, process_default, process_human_handoff
+from app.nodes.processors import (
+    process_shipping_update,
+    process_greeting,
+    process_order_issue,
+    process_replacement,
+    process_refund,
+    process_default,
+    process_human_handoff
+)
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
 def start_router(state: AgentState) -> str:
+    # 1. Direct follow-up routing if active touchpoint flags are set
+    if state.get("cancel_offered"):
+        return "order_issue"
+    if state.get("replacement_offered"):
+        return "replacement"
+    if state.get("refund_offered"):
+        return "refund"
+
     intent = state.get("intent")
     sub_intents = state.get("sub_intents", [])
-    if intent == "order_issue" and "cancel_product" in sub_intents:
-        return "order_issue"
-    if intent == "order_issue" and "refund" in sub_intents:
-        return "refund"
+    if intent == "order_issue":
+        if "refund" in sub_intents:
+            return "refund"
+        if "replace_product" in sub_intents:
+            return "replacement"
+        if "cancel_product" in sub_intents:
+            return "order_issue"
     return "classify"
 
 def router(state: AgentState) -> str:
+    # Respect active follow-up flags if classification was skipped or reset
+    if state.get("cancel_offered"):
+        return "order_issue"
+    if state.get("replacement_offered"):
+        return "replacement"
+    if state.get("refund_offered"):
+        return "refund"
+
     intent = state.get("intent")
     sub_intents = state.get("sub_intents", [])
     if intent == "shipping_address_update":
@@ -25,6 +52,8 @@ def router(state: AgentState) -> str:
     elif intent == "order_issue":
         if "refund" in sub_intents:
             return "refund"
+        elif "replace_product" in sub_intents:
+            return "replacement"
         return "order_issue"
     else:
         return "default"
@@ -36,6 +65,7 @@ def create_graph():
     workflow.add_node("shipping_update", process_shipping_update)
     workflow.add_node("greeting", process_greeting)
     workflow.add_node("order_issue", process_order_issue)
+    workflow.add_node("replacement", process_replacement)
     workflow.add_node("refund", process_refund)
     workflow.add_node("human_handoff", process_human_handoff)
     workflow.add_node("default", process_default)
@@ -45,6 +75,7 @@ def create_graph():
         start_router,
         {
             "order_issue": "order_issue",
+            "replacement": "replacement",
             "refund": "refund",
             "classify": "classify"
         }
@@ -57,6 +88,7 @@ def create_graph():
             "greeting": "greeting",
             "human_handoff": "human_handoff",
             "order_issue": "order_issue",
+            "replacement": "replacement",
             "refund": "refund",
             "default": "default"
         }
@@ -64,6 +96,7 @@ def create_graph():
     workflow.add_edge("shipping_update", END)
     workflow.add_edge("greeting", END)
     workflow.add_edge("order_issue", END)
+    workflow.add_edge("replacement", END)
     workflow.add_edge("refund", END)
     workflow.add_edge("human_handoff", END)
     workflow.add_edge("default", END)
