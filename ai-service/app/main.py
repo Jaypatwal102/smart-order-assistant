@@ -13,6 +13,7 @@ app = FastAPI(title="Intent Classification Service")
 class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
+    user_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     intent: str
@@ -21,6 +22,9 @@ class ChatResponse(BaseModel):
     language: str
     order_id: Optional[str] = None
     new_address: Optional[str] = None
+    bot_response: Optional[str] = None
+    handoff_required: bool = False
+    handoff_reason: Optional[str] = None
 
 class TranslateRequest(BaseModel):
     text: str
@@ -40,7 +44,8 @@ async def classify_intent(request: ChatRequest):
         result = await intent_classifier_graph.ainvoke(
             {
                 "message": request.message,
-                "conversation_id": thread_id
+                "conversation_id": thread_id,
+                "user_id": request.user_id
             },
             config=config
         )
@@ -51,7 +56,10 @@ async def classify_intent(request: ChatRequest):
             confidence=result.get("confidence", 0),
             language=result.get("language", "English"),
             order_id=result.get("order_id"),
-            new_address=result.get("new_address")
+            new_address=result.get("new_address"),
+            bot_response=result.get("bot_response"),
+            handoff_required=result.get("handoff_required", False),
+            handoff_reason=result.get("handoff_reason")
         )
     except Exception as e:
         logger.error(f"Error during graph classification: {e}")

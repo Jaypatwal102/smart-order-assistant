@@ -12,14 +12,15 @@ You need to multilingual support for languages English, French, Russian, Hindi.
 
 - greeting (e.g. "hi", "hello", "good morning")
 - shipping_address_update (e.g. "update my shipping address")
-- order_issue (e.g. "received the wrong product", "recommend another product", "cancel my order")
+- order_issue (e.g. "received the wrong product", "recommend another product", "cancel my order", "i want a refund")
 - human_handoff (e.g. "connect me to an agent")
 - unknown (if confidence is low or it does not match the above)
 
 Supported sub-intents (only for order_issue):
 - replace_product (if the user wants to replace or exchange a damaged/incorrect product)
-- cancel_product (if the user wants to cancel a product, request a refund, or cancel an order)
+- cancel_product (if the user wants to cancel a product or cancel an order)
 - product_recommendation (if the user asks for suggestions or product recommendations)
+- refund (if the user explicitly asks for a refund or money back, including for wrong orders)
 
 Examples:
 User: "hello"
@@ -27,6 +28,9 @@ User: "hello"
 
 User: "my lotion arrived broken, I want to cancel it"
 {{"intent": "order_issue", "sub_intents": ["cancel_product"], "confidence": 95, "language": "English"}}
+
+User: "you delivered the wrong item, I need a refund"
+{{"intent": "order_issue", "sub_intents": ["refund"], "confidence": 95, "language": "English"}}
 """
 
 def classify_node(state: AgentState) -> dict:

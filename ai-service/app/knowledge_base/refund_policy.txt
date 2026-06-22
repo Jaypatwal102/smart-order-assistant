@@ -1,0 +1,88 @@
+SMART ORDER ASSISTANT - REFUND POLICY
+
+A refund may only be approved if ALL required conditions are satisfied.
+
+REFUND ELIGIBILITY
+
+A customer may be eligible for a refund only if:
+
+1. The wrong product was delivered.
+2. The product arrived damaged or defective.
+3. The order was cancelled before shipment.
+4. The order was not delivered.
+5. A duplicate payment was made.
+
+MANDATORY VERIFICATION
+
+Before approving a refund, the system MUST verify:
+
+* A valid order ID exists.
+* The order belongs to the requesting customer.
+* The order description matches what the customer claims.
+* The order status is consistent with the claim.
+* The refund reason matches an eligible scenario.
+* The request is submitted within the allowed refund window.
+
+If any verification step fails, the refund must be rejected or escalated to a human agent.
+
+REFUND TIME WINDOW
+
+* Refund requests must be submitted within 7 days of delivery.
+* Requests submitted after 7 days are not eligible for automatic refund approval.
+
+REFUND RESTRICTIONS
+
+A refund must NOT be approved if:
+
+1. The customer changed their mind after receiving the correct product.
+2. The customer dislikes the product but received the correct item.
+3. The product has been significantly used, consumed, or damaged by the customer.
+4. The request is made more than 7 days after delivery.
+5. The delivery issue was caused by an incorrect address provided by the customer.
+6. The order was successfully delivered and no valid refund reason is provided.
+7. The claim contradicts order information stored in the database.
+
+CLAIM VALIDATION
+
+The customer's explanation must be believable and consistent with:
+
+* The ordered product.
+* The order status.
+* The delivery timeline.
+* Available order records.
+
+Claims that are clearly impossible, fraudulent, contradictory, or unrelated to the purchased product must be rejected.
+
+Examples of invalid claims:
+
+* Ordered moisturizer but claims to have received a car.
+* Claims damage before the order was delivered.
+* Requests a refund for an order that does not belong to them.
+* Requests a refund for an order that does not exist.
+
+ESCALATION TO HUMAN AGENT
+
+The request must be escalated if:
+
+* Ownership cannot be verified.
+* Refund eligibility is unclear.
+* The customer disputes the decision.
+* Multiple conflicting claims are detected.
+* Payment or fraud issues are involved.
+
+EXAMPLES
+
+Approved:
+
+* Wrong moisturizer delivered within 7 days.
+* Product damaged during delivery.
+* Order cancelled before shipment.
+* Duplicate payment confirmed.
+
+Rejected:
+
+* Customer changed their mind.
+* Correct product delivered but customer did not like it.
+* Refund requested 20 days after delivery.
+* Invalid order ID.
+* Customer cannot verify ownership of the order.

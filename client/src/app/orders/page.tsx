@@ -107,7 +107,12 @@ export default function OrdersPage() {
                     
                     <div className={styles.detailItem}>
                       <Calendar size={16} className={styles.detailIcon} />
-                      <span>Date: {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}</span>
+                      <span>Ordered: {order.ordered_at ? new Date(order.ordered_at).toLocaleDateString() : 'N/A'}</span>
+                    </div>
+                    
+                    <div className={styles.detailItem}>
+                      <Calendar size={16} className={styles.detailIcon} />
+                      <span>Delivered: {order.delivered_at ? new Date(order.delivered_at).toLocaleDateString() : 'Pending'}</span>
                     </div>
                     
                     <div className={styles.detailItem}>

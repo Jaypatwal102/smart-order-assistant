@@ -29,6 +29,12 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
+    role: Mapped[str] = mapped_column(
+        String(50), 
+        nullable=False, 
+        default="user", 
+        server_default=text("'user'")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
