@@ -20,8 +20,23 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await loginUser(email, password);
-      router.push('/support');
+      const data = await loginUser(email, password);
+      // Fetch user profile to get role
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${data.access_token}`,
+        },
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        if (userData.role === 'human_agent') {
+          router.push('/agent/dashboard');
+        } else {
+          router.push('/support');
+        }
+      } else {
+        router.push('/support');
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {

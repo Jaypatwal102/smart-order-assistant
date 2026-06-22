@@ -207,7 +207,20 @@ def send_message(
             
         sub_intents_str = ", ".join(classification.get("sub_intents", [])) or "None"
         
-        if intent == "shipping_address_update":
+        if classification.get("handoff_required"):
+            # Update status and queue
+            conv.status = "handed_over"
+            from app.models.conversations import FallbackHandoff
+            handoff = FallbackHandoff(
+                conversation_id=conversation_id,
+                trigger_message_id=user_msg.message_id,
+                fallback_reason=classification.get("handoff_reason", "Handoff requested by AI")
+            )
+            db.add(handoff)
+            bot_reply = classification.get("bot_response") or "I am transferring you to a human agent."
+            translated_reply = _translate_text(bot_reply, conv.detected_language)
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
+        elif intent == "shipping_address_update":
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db, conv.detected_language)
         elif intent == "greeting":
@@ -220,7 +233,7 @@ def send_message(
                 message_text=translated_greeting
             )
             db.add(bot_msg)
-        elif intent == "order_issue" and "cancel_product" in classification.get("sub_intents", []):
+        elif intent == "order_issue" and ("cancel_product" in classification.get("sub_intents", []) or "refund" in classification.get("sub_intents", [])):
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             bot_reply = classification.get("bot_response")
             if bot_reply:
@@ -332,7 +345,20 @@ def send_audio(
             
         sub_intents_str = ", ".join(classification.get("sub_intents", [])) or "None"
         
-        if intent == "shipping_address_update":
+        if classification.get("handoff_required"):
+            # Update status and queue
+            conv.status = "handed_over"
+            from app.models.conversations import FallbackHandoff
+            handoff = FallbackHandoff(
+                conversation_id=conversation_id,
+                trigger_message_id=user_msg.message_id,
+                fallback_reason=classification.get("handoff_reason", "Handoff requested by AI")
+            )
+            db.add(handoff)
+            bot_reply = classification.get("bot_response") or "I am transferring you to a human agent."
+            translated_reply = _translate_text(bot_reply, conv.detected_language)
+            db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=translated_reply))
+        elif intent == "shipping_address_update":
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             _forward_message_to_rasa(str(conversation_id), str(current_user.user_id), "/shipping_address_update", db, conv.detected_language)
         elif intent == "greeting":
@@ -345,7 +371,7 @@ def send_audio(
                 message_text=translated_greeting
             )
             db.add(bot_msg)
-        elif intent == "order_issue" and "cancel_product" in classification.get("sub_intents", []):
+        elif intent == "order_issue" and ("cancel_product" in classification.get("sub_intents", []) or "refund" in classification.get("sub_intents", [])):
             db.add(Message(conversation_id=conversation_id, sender_type="bot", message_text=f"[Classification Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {classification.get('confidence')}% | Lang: {detected_language}"))
             bot_reply = classification.get("bot_response")
             if bot_reply:

@@ -23,6 +23,8 @@ class ChatResponse(BaseModel):
     order_id: Optional[str] = None
     new_address: Optional[str] = None
     bot_response: Optional[str] = None
+    handoff_required: bool = False
+    handoff_reason: Optional[str] = None
 
 class TranslateRequest(BaseModel):
     text: str
@@ -55,7 +57,9 @@ async def classify_intent(request: ChatRequest):
             language=result.get("language", "English"),
             order_id=result.get("order_id"),
             new_address=result.get("new_address"),
-            bot_response=result.get("bot_response")
+            bot_response=result.get("bot_response"),
+            handoff_required=result.get("handoff_required", False),
+            handoff_reason=result.get("handoff_reason")
         )
     except Exception as e:
         logger.error(f"Error during graph classification: {e}")

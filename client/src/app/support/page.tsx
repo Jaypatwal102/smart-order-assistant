@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 
 interface Message {
   id: string;
-  sender: 'ai' | 'user';
+  sender: 'ai' | 'user' | 'human_agent';
   text?: string;
   time: string;
   isCustomCard?: boolean;
@@ -31,9 +31,18 @@ export default function SupportPage() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  
+  // Handoff state
+  const [isHandedOver, setIsHandedOver] = useState(false);
+  const [isConnectedToAgent, setIsConnectedToAgent] = useState(false);
+  const [agentId, setAgentId] = useState<string | null>(null);
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const dataChannelRef = useRef<RTCDataChannel | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,6 +51,13 @@ export default function SupportPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+      if (peerConnectionRef.current) peerConnectionRef.current.close();
+    };
+  }, []);
 
   useEffect(() => {
     async function loadUser() {
@@ -84,6 +100,19 @@ export default function SupportPage() {
 
   const loadConversation = (conv: any) => {
     setActiveConversationId(conv.id);
+    if (conv.status === 'handed_over') {
+      setIsHandedOver(true);
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+        connectWebSocket(conv.id);
+      }
+    } else {
+      setIsHandedOver(false);
+      setIsConnectedToAgent(false);
+      setAgentId(null);
+      if (wsRef.current) wsRef.current.close();
+      if (peerConnectionRef.current) peerConnectionRef.current.close();
+    }
+
     if (!conv.messages || conv.messages.length === 0) {
       setMessages([
         {
@@ -103,12 +132,98 @@ export default function SupportPage() {
       }
       return {
         id: m.id,
-        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
         text: m.message_text,
         time: timeStr
       };
     });
     setMessages(formattedMsgs);
+  };
+
+  const connectWebSocket = (conversationId: string) => {
+    const wsUrl = `ws://localhost:8000/handoff/ws/user/${conversationId}`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onmessage = async (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'agent_assigned') {
+        setAgentId(data.agent_id);
+      } else if (data.type === 'offer') {
+        await handleOffer(data.payload, data.agent_id);
+      } else if (data.type === 'ice-candidate') {
+        if (peerConnectionRef.current) {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.payload));
+        }
+      } else if (data.type === 'chat_message') {
+        if (!dataChannelRef.current || dataChannelRef.current.readyState !== 'open') {
+          setMessages(prev => [...prev, {
+            id: Math.random().toString(),
+            sender: 'human_agent',
+            text: data.message,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }]);
+        }
+      }
+    };
+  };
+
+  const handleOffer = async (offer: RTCSessionDescriptionInit, agentId: string) => {
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+    peerConnectionRef.current = pc;
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate && wsRef.current) {
+        wsRef.current.send(JSON.stringify({
+          type: 'ice-candidate',
+          payload: event.candidate,
+          agent_id: agentId
+        }));
+      }
+    };
+
+    pc.ondatachannel = (event) => {
+      const channel = event.channel;
+      dataChannelRef.current = channel;
+      
+      channel.onmessage = (e) => {
+        setMessages(prev => [...prev, {
+          id: Math.random().toString(),
+          sender: 'human_agent',
+          text: e.data,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+      };
+      
+      channel.onopen = () => {
+        setIsConnectedToAgent(true);
+        console.log("Data channel opened from user");
+      };
+      
+      channel.onclose = () => {
+        setIsConnectedToAgent(false);
+        setMessages(prev => [...prev, {
+          id: Math.random().toString(),
+          sender: 'ai', // treating system message as AI
+          text: 'The agent has ended the chat.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+      };
+    };
+
+    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    if (wsRef.current) {
+      wsRef.current.send(JSON.stringify({
+        type: 'answer',
+        payload: answer,
+        agent_id: agentId
+      }));
+    }
   };
 
   if (loading) {
@@ -133,6 +248,25 @@ export default function SupportPage() {
 
     setMessages(prev => [...prev, newUserMessage]);
     setInputValue('');
+
+    if (isHandedOver) {
+      if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+        dataChannelRef.current.send(userText);
+        wsRef.current?.send(JSON.stringify({
+          type: 'chat_message',
+          message: userText,
+          agent_id: agentId
+        }));
+      } else {
+        wsRef.current?.send(JSON.stringify({
+          type: 'chat_message',
+          message: userText,
+          agent_id: agentId
+        }));
+      }
+      return;
+    }
+
     setIsTyping(true);
 
     try {
@@ -144,6 +278,12 @@ export default function SupportPage() {
       if (updatedConv.messages) {
         // Normal conversation update
         setActiveConversationId(updatedConv.id);
+        if (updatedConv.status === 'handed_over') {
+           setIsHandedOver(true);
+           if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+             connectWebSocket(updatedConv.id);
+           }
+        }
         const formattedMsgs = updatedConv.messages.map((m: any) => ({
           id: m.id,
           sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
@@ -226,9 +366,15 @@ export default function SupportPage() {
       
       if (updatedConv.messages) {
         setActiveConversationId(updatedConv.id);
+        if (updatedConv.status === 'handed_over') {
+           setIsHandedOver(true);
+           if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+             connectWebSocket(updatedConv.id);
+           }
+        }
         const formattedMsgs = updatedConv.messages.map((m: any) => ({
           id: m.id,
-          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
           text: m.message_text,
           time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
         }));
@@ -277,6 +423,15 @@ export default function SupportPage() {
         
         <button className={styles.newChatBtn} onClick={() => {
           setActiveConversationId(null);
+          setIsHandedOver(false);
+          setIsConnectedToAgent(false);
+          setAgentId(null);
+          if (dataChannelRef.current) dataChannelRef.current.onclose = null;
+          if (wsRef.current) wsRef.current.close();
+          if (peerConnectionRef.current) peerConnectionRef.current.close();
+          wsRef.current = null;
+          peerConnectionRef.current = null;
+          dataChannelRef.current = null;
           setMessages([
             {
               id: '1',
@@ -336,7 +491,36 @@ export default function SupportPage() {
             </div>
           </div>
           <div className={styles.helpSubtitle}>Talk to our human support</div>
-          <button className={styles.contactBtn}>
+          <button className={styles.contactBtn} onClick={() => {
+            const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+            if (!token) return;
+            const text = "connect me to an agent";
+            setMessages(prev => [...prev, {
+              id: Date.now().toString(),
+              sender: 'user',
+              text: text,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            }]);
+            setIsTyping(true);
+            sendMessage(token, text, activeConversationId).then(updatedConv => {
+              if (updatedConv.messages) {
+                setActiveConversationId(updatedConv.id);
+                if (updatedConv.status === 'handed_over') {
+                   setIsHandedOver(true);
+                   if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+                     connectWebSocket(updatedConv.id);
+                   }
+                }
+                const formattedMsgs = updatedConv.messages.map((m: any) => ({
+                  id: m.id,
+                  sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
+                  text: m.message_text,
+                  time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+                }));
+                setMessages(formattedMsgs);
+              }
+            }).finally(() => setIsTyping(false));
+          }}>
             <Headphones size={16} /> Contact Support
           </button>
         </div>
@@ -360,8 +544,20 @@ export default function SupportPage() {
       <div className={styles.mainArea}>
         {/* Header */}
         <div className={styles.header}>
-          <div className={styles.headerTitle}>
+          <div className={styles.headerTitle} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Sparkles size={20} color="#7c5dfa" /> AI Support Assistant
+            {isHandedOver && (
+              <span style={{ 
+                fontSize: '14px', 
+                padding: '6px 12px', 
+                borderRadius: '16px', 
+                backgroundColor: isConnectedToAgent ? '#dcfce7' : '#fee2e2',
+                color: isConnectedToAgent ? '#166534' : '#991b1b',
+                fontWeight: '500'
+              }}>
+                {isConnectedToAgent ? 'Connected to Agent' : 'Waiting for Agent...'}
+              </span>
+            )}
           </div>
           <div className={styles.headerActions}>
             <button className={styles.viewOrdersBtn} onClick={() => router.push('/orders')}>
@@ -376,10 +572,10 @@ export default function SupportPage() {
         {/* Chat Container */}
         <div className={styles.chatContainer}>
           {messages.map((msg) => (
-            <div key={msg.id} className={`${styles.messageRow} ${msg.sender === 'ai' ? styles.ai : styles.user}`}>
-              {msg.sender === 'ai' && (
+            <div key={msg.id} className={`${styles.messageRow} ${(msg.sender === 'ai' || msg.sender === 'human_agent') ? styles.ai : styles.user}`}>
+              {(msg.sender === 'ai' || msg.sender === 'human_agent') && (
                 <div className={styles.aiAvatar}>
-                  <Sparkles size={20} color="#fff" />
+                  {msg.sender === 'human_agent' ? <Headphones size={20} color="#fff" /> : <Sparkles size={20} color="#fff" />}
                 </div>
               )}
               

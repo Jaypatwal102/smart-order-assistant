@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, orders, conversations
+from app.routers import auth, orders, conversations, handoff
 from app.core.database import create_tables
 from fastapi.staticfiles import StaticFiles
 import os
@@ -23,6 +23,7 @@ app.mount("/audios", StaticFiles(directory="audios"), name="audios")
 app.include_router(auth.router)
 app.include_router(conversations.router)
 app.include_router(orders.router)
+app.include_router(handoff.router)
 
 @app.get("/")
 def root():

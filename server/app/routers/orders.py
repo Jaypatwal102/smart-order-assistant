@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import uuid
 
 from app.core.database import get_db
-from app.models.orders import Order, ShippingLog
+from app.models.orders import Order, ShippingLog, OrderUpdateLog
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -87,7 +87,9 @@ def list_orders(
             "product_name": order.product_name,
             "total_amount": float(order.total_amount),
             "shipping_address": order.shipping_address,
-            "created_at": order.created_at.isoformat() if order.created_at else None
+            "created_at": order.created_at.isoformat() if order.created_at else None,
+            "ordered_at": order.ordered_at.isoformat() if order.ordered_at else None,
+            "delivered_at": order.delivered_at.isoformat() if order.delivered_at else None
         }
         for order in db_orders
     ]
@@ -149,7 +151,9 @@ def get_order(order_id: str, db: Session = Depends(get_db)):
         "status": db_order.status,
         "product_name": db_order.product_name,
         "total_amount": float(db_order.total_amount),
-        "shipping_address": db_order.shipping_address
+        "shipping_address": db_order.shipping_address,
+        "ordered_at": db_order.ordered_at.isoformat() if db_order.ordered_at else None,
+        "delivered_at": db_order.delivered_at.isoformat() if db_order.delivered_at else None
     }
 
 
@@ -229,7 +233,17 @@ def cancel_order(order_id: str, db: Session = Depends(get_db)):
             detail=f"Order '{order_id}' is already cancelled."
         )
 
+    old_status = db_order.status
     db_order.status = "cancelled"
+    
+    update_log = OrderUpdateLog(
+        order_id=db_order.order_id,
+        old_status=old_status,
+        new_status="cancelled",
+        reason="User requested cancellation"
+    )
+    db.add(update_log)
+    
     db.commit()
     db.refresh(db_order)
 
@@ -242,5 +256,57 @@ def cancel_order(order_id: str, db: Session = Depends(get_db)):
             "status": db_order.status,
             "product_name": db_order.product_name,
             "shipping_address": db_order.shipping_address
+        }
+    }
+
+@router.post("/{order_id}/refund")
+def process_refund(order_id: str, db: Session = Depends(get_db)):
+    """Processes a refund for the given order."""
+    try:
+        order_uuid = uuid.UUID(order_id.strip('"').strip("'"))
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid order_id format. Must be a valid UUID."
+        )
+
+    db_order = db.query(Order).filter(Order.order_id == order_uuid).first()
+    if not db_order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order '{order_id}' not found."
+        )
+
+    # In a real system, you would call a payment gateway API here to process the refund.
+    # For now, we update the status and return success.
+    if db_order.status.lower() == "refunded":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Order '{order_id}' has already been refunded."
+        )
+
+    old_status = db_order.status
+    db_order.status = "refunded"
+    
+    update_log = OrderUpdateLog(
+        order_id=db_order.order_id,
+        old_status=old_status,
+        new_status="refunded",
+        reason="Automated refund processed via AI agent"
+    )
+    db.add(update_log)
+    
+    db.commit()
+    db.refresh(db_order)
+
+    return {
+        "status": "success",
+        "message": f"Successfully processed refund for order '{order_id}'.",
+        "order": {
+            "order_id": str(db_order.order_id),
+            "user_id": str(db_order.user_id),
+            "status": db_order.status,
+            "product_name": db_order.product_name,
+            "total_amount": float(db_order.total_amount)
         }
     }
