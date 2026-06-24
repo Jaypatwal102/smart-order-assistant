@@ -5,10 +5,9 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, String, func, text, Numeric
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 from app.models.products import Product
 
@@ -19,13 +18,12 @@ class Order(Base):
     __tablename__ = "orders"
 
     order_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
@@ -40,7 +38,7 @@ class Order(Base):
         nullable=True,
     )
     product_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("products.product_id", ondelete="SET NULL"),
         nullable=True,
     )
@@ -92,19 +90,18 @@ class ShippingLog(Base):
     __tablename__ = "shipping_logs"
 
     log_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     order_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("orders.order_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -124,13 +121,12 @@ class OrderUpdateLog(Base):
     __tablename__ = "order_update_logs"
 
     log_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     order_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("orders.order_id", ondelete="CASCADE"),
         nullable=False,
         index=True,

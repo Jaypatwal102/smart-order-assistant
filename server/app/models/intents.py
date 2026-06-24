@@ -16,10 +16,9 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 if TYPE_CHECKING:
     from app.models.users import User
@@ -29,10 +28,9 @@ class Intent(Base):
     __tablename__ = "intents"
 
     intent_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     intent_name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
@@ -46,7 +44,7 @@ class Intent(Base):
         Boolean,
         nullable=False,
         default=True,
-        server_default=text("true"),
+        server_default=text("1"),
     )
 
     training_phrases: Mapped[list[IntentTrainingPhrase]] = relationship(
@@ -64,13 +62,12 @@ class IntentTrainingPhrase(Base):
     __tablename__ = "intent_training_phrases"
 
     phrase_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     intent_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("intents.intent_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -83,7 +80,7 @@ class IntentTrainingPhrase(Base):
         server_default=text("'en'"),
     )
     created_by: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("users.user_id", ondelete="SET NULL"),
         index=True,
     )
@@ -112,10 +109,9 @@ class FallbackReview(Base):
     )
 
     review_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     unrecognized_text: Mapped[str] = mapped_column(Text, nullable=False)
     session_confidence: Mapped[Decimal | None] = mapped_column(Numeric(4, 3))
@@ -132,7 +128,7 @@ class FallbackReview(Base):
         server_default=text("'pending'"),
     )
     assigned_to_intent: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("intents.intent_id", ondelete="SET NULL"),
         index=True,
     )

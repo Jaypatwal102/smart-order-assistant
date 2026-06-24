@@ -16,10 +16,9 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.core.database import Base, GUID
 
 if TYPE_CHECKING:
     from app.models.users import User, UserSession
@@ -35,13 +34,12 @@ class Conversation(Base):
     )
 
     conversation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     session_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("user_sessions.session_id", ondelete="SET NULL"),
         index=True,
     )
@@ -87,13 +85,12 @@ class Message(Base):
     )
 
     message_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     conversation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("conversations.conversation_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -145,13 +142,12 @@ class BotRoutingLog(Base):
     )
 
     routing_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     message_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("messages.message_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -174,25 +170,24 @@ class FallbackHandoff(Base):
     __tablename__ = "fallback_handoffs"
 
     fallback_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         primary_key=True,
         default=uuid.uuid4,
-        server_default=text("gen_random_uuid()"),
     )
     conversation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("conversations.conversation_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     trigger_message_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("messages.message_id", ondelete="SET NULL"),
         index=True,
     )
     fallback_reason: Mapped[str | None] = mapped_column(String(255))
     assigned_agent_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("users.user_id", ondelete="SET NULL"),
         index=True,
     )
