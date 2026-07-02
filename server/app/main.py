@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import auth, orders, conversations, handoff, products
-from app.core.database import create_tables
+from app.database.connection import create_tables
 from fastapi.staticfiles import StaticFiles
 import os
 
