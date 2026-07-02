@@ -69,6 +69,10 @@ export default function SupportPage() {
         }
 
         const userData = await getCurrentUser(token);
+        if (userData.role === 'HUMAN_AGENT') {
+          router.push('/agent/support');
+          return;
+        }
         setUser(userData);
         if (userData.conversations && userData.conversations.length > 0) {
           setAllConversations(userData.conversations);
@@ -98,12 +102,12 @@ export default function SupportPage() {
     }
   }, [user, messages.length, activeConversationId]);
 
-  const loadConversation = (conv: any) => {
-    setActiveConversationId(conv.id);
+  const loadConversation = async (conv: any) => {
+    setActiveConversationId(conv.id || conv.cid);
     if (conv.status === 'handed_over') {
       setIsHandedOver(true);
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        connectWebSocket(conv.id);
+        connectWebSocket(conv.id || conv.cid);
       }
     } else {
       setIsHandedOver(false);
@@ -113,31 +117,44 @@ export default function SupportPage() {
       if (peerConnectionRef.current) peerConnectionRef.current.close();
     }
 
-    if (!conv.messages || conv.messages.length === 0) {
-      setMessages([
-        {
-          id: '1',
-          sender: 'ai',
-          text: `Hello ${user?.first_name || user?.email?.split('@')[0]}! 👋\nI'm your AI support assistant. How can I help you today?`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-      return;
-    }
+    try {
+      const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+      if (!token) return;
 
-    const formattedMsgs = conv.messages.map((m: any) => {
-      let timeStr = '';
-      if (m.created_at) {
-        timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/conversations/${conv.id || conv.cid}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const fullConv = await res.json();
+
+      if (!fullConv.messages || fullConv.messages.length === 0) {
+        setMessages([
+          {
+            id: '1',
+            sender: 'ai',
+            text: `Hello ${user?.first_name || user?.email?.split('@')[0]}! 👋\nI'm your AI support assistant. How can I help you today?`,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        return;
       }
-      return {
-        id: m.id,
-        sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
-        text: m.message_text,
-        time: timeStr
-      };
-    });
-    setMessages(formattedMsgs);
+
+      const formattedMsgs = fullConv.messages.map((m: any) => {
+        let timeStr = '';
+        if (m.created_at) {
+          timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        return {
+          id: m.mid || m.id,
+          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
+          text: m.message_text,
+          time: timeStr
+        };
+      });
+      setMessages(formattedMsgs);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const connectWebSocket = (conversationId: string) => {

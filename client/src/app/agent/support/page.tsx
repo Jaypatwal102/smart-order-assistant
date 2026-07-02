@@ -39,11 +39,11 @@ export default function AgentDashboard() {
         });
         if (response.ok) {
           const userData = await response.json();
-          if (userData.role !== 'human_agent') {
+          if (userData.role !== 'HUMAN_AGENT') {
             router.push('/support');
             return;
           }
-          connectWebSocket(userData.user_id);
+          connectWebSocket(userData.uid);
         } else {
           router.push('/login');
         }

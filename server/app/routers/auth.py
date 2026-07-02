@@ -82,7 +82,6 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
 
 @router.get("/me")
 def read_users_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Find Conversations and Messages (via joinedload)
     conversations = (
         db.query(Conversation)
         .options(joinedload(Conversation.messages))
@@ -97,18 +96,18 @@ def read_users_me(current_user: User = Depends(get_current_user), db: Session = 
         for msg in conv.messages:
             msgs.append({
                 "mid": str(msg.mid),
-                "sender_type": msg.sender_type,
+                "sender_type": msg.sender_type.value if msg.sender_type else None,
                 "message_text": msg.message_text,
                 "audio_location": msg.audio_location,
                 "created_at": msg.created_at.isoformat() if msg.created_at else None
             })
-        
-        # Sort messages by created_at ascending
+            
         msgs.sort(key=lambda x: x["created_at"] or "")
         
         conv_list.append({
+            "id": str(conv.cid),  # renamed to id for frontend compatibility or just cid
             "cid": str(conv.cid),
-            "status": conv.status,
+            "status": conv.status.value if conv.status else None,
             "started_at": conv.started_at.isoformat() if conv.started_at else None,
             "messages": msgs
         })
@@ -118,7 +117,7 @@ def read_users_me(current_user: User = Depends(get_current_user), db: Session = 
         "email": current_user.email,
         "first_name": current_user.first_name,
         "last_name": current_user.last_name,
-        "role": current_user.role,
+        "role": current_user.role.value if current_user.role else None,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
         "conversations": conv_list
     }

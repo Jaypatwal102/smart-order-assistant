@@ -17,8 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.makedirs("audios", exist_ok=True)
-app.mount("/audios", StaticFiles(directory="audios"), name="audios")
 
 app.include_router(auth.router)
 app.include_router(conversations.router)

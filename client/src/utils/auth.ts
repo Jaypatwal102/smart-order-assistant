@@ -58,7 +58,7 @@ export function logoutUser() {
 export async function sendMessage(token: string, text: string, conversationId: string | null = null) {
   const body: any = { message_text: text };
   if (conversationId) {
-    body.conversation_id = conversationId;
+    body.cid = conversationId;
   }
   
   const response = await fetch(`${API_URL}/conversations/message`, {
@@ -81,7 +81,7 @@ export async function sendAudioMessage(token: string, audioBlob: Blob, conversat
   const formData = new FormData();
   formData.append("audio", audioBlob, "recording.webm");
   if (conversationId) {
-    formData.append("conversation_id", conversationId);
+    formData.append("cid", conversationId);
   }
   
   const response = await fetch(`${API_URL}/conversations/audio`, {
@@ -99,8 +99,8 @@ export async function sendAudioMessage(token: string, audioBlob: Blob, conversat
   return response.json();
 }
 
-export async function getOrders(userId: string) {
-  const response = await fetch(`${API_URL}/orders?user_id=${userId}`, {
+export async function getOrders(uid: string) {
+  const response = await fetch(`${API_URL}/orders?uid=${uid}`, {
     headers: {
       "Content-Type": "application/json",
     },

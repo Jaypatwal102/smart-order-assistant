@@ -28,11 +28,24 @@ export default function OrdersPage() {
         }
 
         const user = await getCurrentUser(token);
-        const userOrders = await getOrders(user.user_id);
+        const userOrders = await getOrders(user.uid);
         
-        // Sort orders by date descending
-        const sortedOrders = userOrders.sort((a: any, b: any) => {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        // Fetch products to map pid to product_name
+        const productsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/products`);
+        let productsMap: Record<string, string> = {};
+        if (productsResponse.ok) {
+          const productsList = await productsResponse.json();
+          productsMap = productsList.reduce((acc: any, p: any) => ({...acc, [p.pid]: p.product_name}), {});
+        }
+
+        const ordersWithNames = userOrders.map((o: any) => ({
+           ...o,
+           product_name: productsMap[o.pid] || `Product ${o.pid?.split('-')[0]}`
+        }));
+        
+        // Sort orders by delivery date descending
+        const sortedOrders = ordersWithNames.sort((a: any, b: any) => {
+          return new Date(b.delivery_date || 0).getTime() - new Date(a.delivery_date || 0).getTime();
         });
         
         setOrders(sortedOrders);
@@ -91,8 +104,8 @@ export default function OrdersPage() {
                       {copiedId === order.order_id ? <Check size={14} color="#22c55e" /> : <Copy size={14} />}
                     </button>
                   </div>
-                  <div className={`${styles.statusBadge} ${styles[order.status.replace(/\s+/g, '').toLowerCase()] || styles.defaultStatus}`}>
-                    {order.status}
+                  <div className={`${styles.statusBadge} ${styles[order.order_status?.replace(/\s+/g, '').toLowerCase()] || styles.defaultStatus}`}>
+                    {order.order_status}
                   </div>
                 </div>
                 
@@ -102,22 +115,17 @@ export default function OrdersPage() {
                   <div className={styles.detailsList}>
                     <div className={styles.detailItem}>
                       <DollarSign size={16} className={styles.detailIcon} />
-                      <span>Amount: ${parseFloat(order.total_amount).toFixed(2)}</span>
+                      <span>Amount: ${parseFloat(order.order_price).toFixed(2)}</span>
                     </div>
                     
                     <div className={styles.detailItem}>
                       <Calendar size={16} className={styles.detailIcon} />
-                      <span>Ordered: {order.ordered_at ? new Date(order.ordered_at).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                    
-                    <div className={styles.detailItem}>
-                      <Calendar size={16} className={styles.detailIcon} />
-                      <span>Delivered: {order.delivered_at ? new Date(order.delivered_at).toLocaleDateString() : 'Pending'}</span>
+                      <span>Delivery Date: {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString() : 'Pending'}</span>
                     </div>
                     
                     <div className={styles.detailItem}>
                       <MapPin size={16} className={styles.detailIcon} />
-                      <span>Shipping to: {order.shipping_address || 'Not provided'}</span>
+                      <span>Shipping to: {order.delivery_address || 'Not provided'}</span>
                     </div>
                   </div>
                 </div>

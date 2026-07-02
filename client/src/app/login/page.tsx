@@ -29,8 +29,8 @@ export default function LoginPage() {
       });
       if (response.ok) {
         const userData = await response.json();
-        if (userData.role === 'human_agent') {
-          router.push('/agent/dashboard');
+        if (userData.role === 'HUMAN_AGENT') {
+          router.push('/agent/support');
         } else {
           router.push('/support');
         }

@@ -16,22 +16,22 @@ def list_products(db: Session = Depends(get_db)):
     return db_products
 
 
-@router.get("/{product_id}", response_model=ProductResponse)
-def get_product(product_id: str, db: Session = Depends(get_db)):
+@router.get("/{pid}", response_model=ProductResponse)
+def get_product(pid: str, db: Session = Depends(get_db)):
     """Retrieve details for a single product."""
     try:
-        product_uuid = uuid.UUID(product_id.strip('"').strip("'"))
+        product_uuid = uuid.UUID(pid.strip('"').strip("'"))
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid product_id format. Must be a valid UUID."
+            detail="Invalid pid format. Must be a valid UUID."
         )
 
     db_product = db.query(Product).filter(Product.pid == product_uuid).first()
     if not db_product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Product '{product_id}' not found."
+            detail=f"Product '{pid}' not found."
         )
 
     return db_product
