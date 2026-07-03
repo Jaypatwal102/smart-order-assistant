@@ -147,7 +147,7 @@ def seed():
             pid=products["Smart Watch"].pid,
             delivery_address="Bengaluru, Karnataka 560001",
             order_price=products["Smart Watch"].price,
-            order_status=OrderStatus.CANCELLED,
+            order_status=OrderStatus.ORDERED,
             delivery_date=None,
         ),
         Order(
@@ -163,11 +163,11 @@ def seed():
             pid=products["Protein Bars"].pid,
             delivery_address="Nagpur, Maharashtra 440001",
             order_price=products["Protein Bars"].price,
-            order_status=OrderStatus.REFUNDED,
+            order_status=OrderStatus.ORDERED,
             delivery_date=None,
         ),
         Order(
-            uid=jelle.uid,
+            uid=abhishek.uid,
             pid=products["Laptop Stand"].pid,
             delivery_address="Delhi 110001",
             order_price=products["Laptop Stand"].price,
@@ -175,7 +175,7 @@ def seed():
             delivery_date=datetime(2026, 5, 22),
         ),
         Order(
-            uid=jelle.uid,
+            uid=abhishek.uid,
             pid=products["Green Tea"].pid,
             delivery_address="Chennai, Tamil Nadu 600028",
             order_price=products["Green Tea"].price,
@@ -183,7 +183,7 @@ def seed():
             delivery_date=None,
         ),
         Order(
-            uid=jelle.uid,
+            uid=abhishek.uid,
             pid=products["Power Bank"].pid,
             delivery_address="Jaipur, Rajasthan 302001",
             order_price=products["Power Bank"].price,
@@ -191,7 +191,7 @@ def seed():
             delivery_date=None,
         ),
         Order(
-            uid=jelle.uid,
+            uid=abhishek.uid,
             pid=products["Vitamin C Serum"].pid,
             delivery_address="Kochi, Kerala 682001",
             order_price=products["Vitamin C Serum"].price,

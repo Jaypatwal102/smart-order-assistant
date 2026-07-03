@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 class ConversationStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
     CLOSED = "CLOSED"
+    HANDED_OVER = "HANDED_OVER"
 
 
 class Conversation(Base):

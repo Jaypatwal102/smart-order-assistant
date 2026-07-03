@@ -41,9 +41,9 @@ def _translate_text(text: str, target_language: str, source_language: Optional[s
 
 def _classify_message(message_text: str, cid: str | None = None, uid: str | None = None) -> dict:
     try:
-        payload = {"message": message_text, "conversation_id": cid}
+        payload = {"message": message_text, "cid": cid}
         if uid:
-            payload["user_id"] = uid
+            payload["uid"] = uid
         ai_res = requests.post(
             "http://localhost:8001/chat",
             json=payload,
@@ -84,7 +84,7 @@ def _forward_message_to_rasa(cid: str, uid: str, message_text: str, db: Session,
     request_failed = False
     try:
         event_url = f"{RASA_URL}/conversations/{cid}/tracker/events"
-        requests.post(event_url, json={"event": "slot", "name": "user_id", "value": str(uid)}, timeout=5)
+        requests.post(event_url, json={"event": "slot", "name": "uid", "value": str(uid)}, timeout=5)
         requests.post(event_url, json={"event": "slot", "name": "language", "value": target_language}, timeout=5)
         
         webhook_url = f"{RASA_URL}/webhooks/rest/webhook"
@@ -155,6 +155,13 @@ def send_message(
         classification = _classify_message(msg_in.message_text, str(cid), str(current_user.uid))
         intent = classification.get("intent")
         detected_lang = classification.get("language", "English")
+        handoff_required = classification.get("handoff_required", False)
+        
+        if intent == "human_handoff":
+            handoff_required = True
+            
+        if handoff_required:
+            conv.status = ConversationStatus.HANDED_OVER
         
         if intent == "shipping_address_update":
             _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db, target_language=detected_lang)
@@ -162,6 +169,13 @@ def send_message(
             bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
             if detected_lang.lower() not in ["en", "english"]:
                 bot_reply = _translate_text(bot_reply, detected_lang)
+                
+            # Append debug info
+            confidence = classification.get("confidence", 0)
+            sub_intents = classification.get("sub_intents", [])
+            sub_intents_str = ", ".join(sub_intents) if sub_intents else "None"
+            bot_reply += f"\n\n[Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {confidence}% | Lang: {detected_lang}"
+            
             db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
         
     db.commit()
@@ -179,9 +193,11 @@ def send_message(
         })
     msgs.sort(key=lambda x: x["created_at"] or "")
     
+    status_str = "HANDED_OVER" if getattr(conv, 'status', None) == ConversationStatus.HANDED_OVER else (conv.status.value if conv.status else None)
+    
     return {
         "cid": str(conv.cid),
-        "status": conv.status.value if conv.status else None,
+        "status": status_str,
         "started_at": conv.started_at.isoformat() if conv.started_at else None,
         "messages": msgs
     }
@@ -240,6 +256,10 @@ def send_audio(
         classification = _classify_message(transcribed_text, str(cid), str(current_user.uid))
         intent = classification.get("intent")
         detected_lang = classification.get("language", "English")
+        handoff_required = classification.get("handoff_required", False)
+        
+        if handoff_required:
+            conv.status = ConversationStatus.HANDED_OVER
         
         if intent == "shipping_address_update":
             _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db, target_language=detected_lang)
@@ -247,6 +267,13 @@ def send_audio(
             bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
             if detected_lang.lower() not in ["en", "english"]:
                 bot_reply = _translate_text(bot_reply, detected_lang)
+                
+            # Append debug info
+            confidence = classification.get("confidence", 0)
+            sub_intents = classification.get("sub_intents", [])
+            sub_intents_str = ", ".join(sub_intents) if sub_intents else "None"
+            bot_reply += f"\n\n[Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {confidence}% | Lang: {detected_lang}"
+            
             db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
         
     db.commit()
