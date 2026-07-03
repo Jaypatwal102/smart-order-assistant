@@ -19,6 +19,14 @@ nlu:
       - hi there
       - greetings
       - good afternoon
+      - bonjour
+      - salut
+      - allô
+      - coucou
+      - bonsoir
+      - hey
+      - bonjour bot
+      - salut bot
 
   # -------------------------
   # GOODBYE
@@ -33,6 +41,11 @@ nlu:
       - catch you later
       - talk to you later
       - have a nice day
+      - au revoir
+      - à bientôt
+      - adieu
+      - salut bye
+      - bye bye
 
   # -------------------------
   # SHIPPING ADDRESS UPDATE
@@ -49,16 +62,33 @@ nlu:
       - Please change where my order will be delivered
       - I need to change my address for my order
       - Update the address for my package
-      - Change my address for my [moisturizer](product_name)
-      - Update shipping address for my [serum](product_name)
-      - Change my delivery address for my [cleanser](product_name)
-      - I want to change my address for my [toner](product_name)
-      - Update my address for my [sunscreen](product_name)
-      - Change my address for my [moisturizer](product_name) to [42 MG Road, Pune](new_address)
+      - Change my address for my moisturizer
+      - Update shipping address for my serum
+      - Change my delivery address for my cleanser
+      - I want to change my address for my toner
+      - Update my address for my sunscreen
+      - Change my address for my moisturizer to [42 MG Road, Pune](new_address)
       - Update my delivery location to [221B Baker Street, London](new_address)
       - Ship my package to [Sector 18, Noida](new_address)
       - Change the address to [12 Park Street, Kolkata](new_address)
       - I want my order delivered to [MG Road, Bengaluru](new_address)
+      - Je veux changer mon adresse de livraison
+      - J'ai besoin de mettre à jour mon adresse
+      - Modifier mon adresse de livraison
+      - Changer mon adresse
+      - Mettre à jour l'adresse de mon colis
+      - J'ai entré une mauvaise adresse
+      - Je souhaite modifier mes coordonnées de livraison
+      - Veuillez changer l'adresse de livraison de ma commande
+      - Je veux changer l'adresse de mon colis de crème hydratante
+      - Mettre à jour l'adresse de livraison de mon sérum
+      - Changer mon adresse de livraison pour mon nettoyant
+      - Mettre à jour mon adresse pour ma crème solaire
+      - Modifier mon adresse pour mon hydratant à [42 MG Road, Pune](new_address)
+      - Mettre à jour ma livraison à [221B Baker Street, London](new_address)
+      - Envoyez mon colis à [Sector 18, Noida](new_address)
+      - Changez l'adresse pour [12 Park Street, Kolkata](new_address)
+      - Je veux que ma commande soit livrée à [MG Road, Bengaluru](new_address)
  
   # -------------------------
   # PROVIDE ORDER ID
@@ -75,6 +105,10 @@ nlu:
       - The ID is [ORD12345](order_id)
       - It is [ORD22222](order_id)
       - [ORD_MOCK_1](order_id)
+      - Mon identifiant de commande est [ORD11111](order_id)
+      - Le numéro de commande est [ORD12345](order_id)
+      - C'est le [ORD22222](order_id)
+      - L'identifiant est [ORD_MOCK_1](order_id)
 
   # -------------------------
   # PROVIDE NEW ADDRESS
@@ -122,6 +156,23 @@ nlu:
       - New address: [Lane 7, Koregaon Park, Pune](new_address)
       - Address is [House 9, Ashok Nagar, Chennai](new_address)
       - Deliver everything to [Block C, Rohini, New Delhi](new_address)
+      - Modifiez-la en [221B Baker Street, London](new_address)
+      - La nouvelle adresse est [Sector 18, Noida](new_address)
+      - Envoyez-le à [12 Park Street, Kolkata](new_address)
+      - Livrez à [MG Road, Bengaluru](new_address)
+      - Ma nouvelle adresse est [Flat 302, Green Residency, Hyderabad](new_address)
+      - Ma nouvelle adresse de livraison est [Flat 302, Green Residency, Hyderabad](new_address)
+      - Veuillez la mettre à jour vers [Connaught Place, New Delhi](new_address)
+      - Mon adresse est [G44 Kharadi, Pune](new_address)
+      - Mettre à jour mon adresse à [G44 Kharadi, Pune](new_address)
+      - Cela devrait être [Plot 10, Hinjewadi Phase 2, Pune](new_address)
+      - Veuillez l'envoyer à [Flat 5A, JP Nagar, Bengaluru](new_address)
+      - J'ai déménagé au [12 Civil Lines, Jaipur](new_address)
+      - Livrez mon colis à [HSR Layout, Bengaluru](new_address)
+      - Utilisez cette adresse: [Flat 701, Palm Heights, Pune](new_address)
+      - Voici ma nouvelle adresse: [House 22, Indiranagar, Bengaluru](new_address)
+      - J'habite au [House 18, Sector 15, Chandigarh](new_address)
+      - Livrez le tout à [Block C, Rohini, New Delhi](new_address)
 
   # -------------------------
   # CONFIRM
@@ -140,6 +191,19 @@ nlu:
       - sure
       - do it
       - update it
+      - oui
+      - oui s'il vous plaît
+      - confirmer
+      - je confirme
+      - c'est correct
+      - correct
+      - d'accord
+      - procéder
+      - vas-y
+      - ok
+      - bien sûr
+      - faire cela
+      - mettez à jour
 
   # -------------------------
   # DENY
@@ -156,6 +220,16 @@ nlu:
       - I changed my mind
       - abort
       - no thanks
+      - non
+      - ne le fais pas
+      - annuler
+      - arrêter
+      - laisse tomber
+      - c'est faux
+      - pas maintenant
+      - j'ai changé d'avis
+      - abandonner
+      - non merci
 
   # -------------------------
   # REQUEST HUMAN AGENT
@@ -172,6 +246,15 @@ nlu:
       - Connect me to support
       - Human agent please
       - Live agent
+      - Je veux parler à un humain
+      - Connectez-moi à un agent conseiller
+      - Laissez-moi parler au service client
+      - J'ai besoin d'un conseiller humain
+      - Transférez-moi à un conseiller
+      - Puis-je parler à une vraie personne
+      - Je veux un conseiller client
+      - Agent en direct
+      - Parler à un conseiller humain
 
   # -------------------------
   # OUT OF SCOPE
@@ -238,4 +321,64 @@ nlu:
       - Help me with billing
       - I have a complaint
       - I want to speak to customer care
+      - Raconte-moi une blague
+      - Quel temps fait-il aujourd'hui
+      - Qui a gagné le match de cricket
+      - Joue de la musique
+      - Ouvre YouTube
+      - Qu'est-ce que l'IA
+      - Comment ça va
+      - Qui est le premier ministre
+      - Écris un poème
+      - Résous mes devoirs de maths
+      - Je veux commander quelque chose
+      - Puis-je acheter un produit
+      - Passer une nouvelle commande
+      - Comment acheter des articles
+      - Je veux annuler ma commande
+      - Annuler mon achat
+      - Suivre ma commande
+      - Où est mon colis
+      - Quand ma commande va-t-elle arriver
+      - Affiche le statut de ma commande
+      - Je veux un remboursement
+      - Retourner ma commande
+      - J'ai reçu le mauvais produit
+      - Remplacer mon article
+      - Je veux échanger ma commande
+      - Comment puis-je contacter le support client
+      - Connectez-moi aux ventes
+      - Avez-vous des réductions
+      - Affichez les offres d'aujourd'hui
+      - Appliquer un code de réduction
+      - Recommander un produit
+      - Rechercher des ordinateurs portables
+      - Trouver un téléphone portable
+      - Je veux acheter des chaussures
+      - Peux-tu réserver un vol
+      - Réserve un hôtel pour moi
+      - Réserver un taxi
+      - Régler une alarme
+      - Quelle heure est-il
+      - Traduis cette phrase
+      - Résume cet article
+      - Générer du code
+      - Explique le machine learning
+      - Qui est le président des États-Unis
+      - Quelle est la capitale de la France
+      - Calcule 25 multiplié par 16
+      - Donne-moi les actualités d'aujourd'hui
+      - Affiche les dernières mises à jour sportives
+      - Envoie un e-mail pour moi
+      - Rédige un CV
+      - Aide-moi à préparer un entretien
+      - J'ai oublié mon mot de passe
+      - Supprimer mon compte
+      - Mettre à jour mon numéro de téléphone
+      - Modifier mon adresse e-mail
+      - Quels modes de paiement acceptez-vous
+      - Puis-je payer par UPI
+      - Aide-moi avec la facturation
+      - J'ai une plainte
+      - Je veux parler au service client
 

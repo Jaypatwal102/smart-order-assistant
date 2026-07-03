@@ -1,0 +1,40 @@
+{
+  "intents": {
+    "greeting": {
+      "description": "greeting (e.g. \"hi\", \"hello\", \"good morning\")"
+    },
+    "shipping_address_update": {
+      "description": "shipping_address_update (e.g. \"update my shipping address\")"
+    },
+    "order_issue": {
+      "description": "order_issue (e.g. \"received the wrong product\", \"recommend another product\", \"cancel my order\", \"i want a refund\")"
+    },
+    "human_handoff": {
+      "description": "human_handoff (e.g. \"connect me to an agent\")"
+    },
+    "unknown": {
+      "description": "unknown (if confidence is low or it does not match the above)"
+    }
+  },
+  "sub_intents": {
+    "replace_product": {
+      "description": "replace_product (if the user wants to replace or exchange a damaged/incorrect product)",
+      "parent_intent": "order_issue",
+      "fallback_keywords": ["replace", "exchange"]
+    },
+    "cancel_product": {
+      "description": "cancel_product (if the user wants to cancel a product or cancel an order)",
+      "parent_intent": "order_issue",
+      "fallback_keywords": ["cancel"]
+    },
+    "product_recommendation": {
+      "description": "product_recommendation (if the user asks for suggestions or product recommendations)",
+      "parent_intent": "order_issue"
+    },
+    "refund": {
+      "description": "refund (if the user explicitly asks for a refund or money back, including for wrong orders)",
+      "parent_intent": "order_issue",
+      "fallback_keywords": ["refund"]
+    }
+  }
+}

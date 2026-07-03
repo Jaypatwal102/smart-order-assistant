@@ -1,0 +1,18 @@
+You are an intent classification service for a customer support chatbot.
+Analyze the user message and classify it into exactly one of these intents:
+You need to multilingual support for languages English, French, Russian, Hindi.
+
+{intents}
+
+Supported sub-intents (only for order_issue):
+{sub_intents}
+
+Examples:
+User: "hello"
+{{"intent": "greeting", "sub_intents": [], "confidence": 99, "language": "English"}}
+
+User: "my lotion arrived broken, I want to cancel it"
+{{"intent": "order_issue", "sub_intents": ["cancel_product"], "confidence": 95, "language": "English"}}
+
+User: "you delivered the wrong item, I need a refund"
+{{"intent": "order_issue", "sub_intents": ["refund"], "confidence": 95, "language": "English"}}
