@@ -37,8 +37,12 @@ class ActionSubmitShippingUpdate(Action):
             response = requests.put(url, json={"new_address": new_address}, timeout=5)
             if response.status_code == 200:
                 updated = True
-                api_response = response.json()
-                dispatcher.utter_message(text=api_response.get("message"))
+                lang = tracker.get_slot("language") or "English"
+                if str(lang).lower() == "french":
+                    success_msg = f"Votre adresse de livraison a été mise à jour avec succès : {new_address}."
+                else:
+                    success_msg = f"Your shipping address has been successfully updated to: {new_address}."
+                dispatcher.utter_message(text=success_msg)
             else:
                 error_msg = f"Server returned status code {response.status_code}."
         except requests.RequestException as e:
@@ -98,9 +102,9 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
             )
             return {"order_id": None}
             
-        user_id = tracker.get_slot("user_id")
+        uid = tracker.get_slot("uid")
 
-        if not user_id:
+        if not uid:
             dispatcher.utter_message(
                 text="Session error: Could not identify your user session. Please log in again."
             )
@@ -114,9 +118,9 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
             if response.status_code == 200:
                 order_data = response.json()
                 
-                # Check ownership: verify order.user_id matches current_user.user_id
-                order_user_uuid = str(order_data.get("user_id")).lower()
-                current_user_uuid = str(user_id).lower()
+                # Check ownership: verify order.uid matches current_user.uid
+                order_user_uuid = str(order_data.get("uid")).lower()
+                current_user_uuid = str(uid).lower()
                 
                 if order_user_uuid != current_user_uuid:
                     dispatcher.utter_message(

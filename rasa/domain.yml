@@ -21,7 +21,7 @@ actions:
   - validate_shipping_address_update_form
 
 slots:
-  user_id:
+  uid:
     type: text
     mappings: []
 
@@ -93,70 +93,80 @@ forms:
 responses:
   utter_greet:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Bonjour ! Comment puis-je vous aider aujourd'hui ?"
     - text: "Hello! How can I help you today?"
 
   utter_goodbye:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Au revoir !"
     - text: "Goodbye!"
 
   utter_ask_order_id:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Veuillez fournir votre identifiant de commande."
     - text: "Please provide your order ID."
 
   utter_ask_new_address:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Veuillez fournir la nouvelle adresse de livraison."
     - text: "Please provide the new shipping address."
 
   utter_ask_confirm_order_id:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Vous avez saisi \"{order_id}\" comme identifiant de commande. Entrez Oui pour confirmer ou Non pour saisir à nouveau."
     - text: "You entered \"{order_id}\" as your order ID. Enter Yes to confirm or No to Input order ID again."
 
   utter_ask_confirm_address:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Vous avez saisi \"{new_address}\" comme nouvelle adresse de livraison. Entrez Oui pour confirmer ou Non pour saisir à nouveau."
     - text: "You entered \"{new_address}\" as your new shipping address. Enter Yes to confirm or No to Input address again."
 
   utter_confirm_update:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Merci. Veuillez confirmer que vous souhaitez mettre à jour votre adresse de livraison. Répondez 'Oui' ou 'Non'."
     - text: "Thank you. Please confirm that you want to update your shipping address. Reply 'Yes' or 'No'."
 
   utter_cancel:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "D'accord, la demande de mise à jour de l'adresse a été annulée."
     - text: "Okay, the address update request has been cancelled."
 
   utter_human_handoff:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Je vais vous mettre en relation avec un conseiller clientèle humain."
     - text: "I'll connect you to a human support agent."
 
   utter_out_of_scope:
     - condition:
-        - name: language
+        - type: slot
+          name: language
           value: French
       text: "Désolé, je ne peux vous aider que pour les mises à jour d'adresse de livraison."
     - text: "Sorry, I can only help with shipping address updates."
