@@ -1,3 +1,5 @@
+import os
+import json
 import logging
 from app.llm.ollama import get_llm
 from app.models.state import AgentState, ClassificationResult
@@ -6,32 +8,30 @@ from langchain_core.output_parsers import JsonOutputParser
 
 logger = logging.getLogger(__name__)
 
-CLASSIFY_PROMPT = """You are an intent classification service for a customer support chatbot.
-Analyze the user message and classify it into exactly one of these intents:
-You need to multilingual support for languages English, French, Russian, Hindi.
+# Load prompts and intents from configuration files
+PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+INTENT_PATH = os.path.join(PROMPTS_DIR, "intent.json")
+PROMPT_PATH = os.path.join(PROMPTS_DIR, "prompt.txt")
 
-- greeting (e.g. "hi", "hello", "good morning")
-- shipping_address_update (e.g. "update my shipping address")
-- order_issue (e.g. "received the wrong product", "recommend another product", "cancel my order", "i want a refund")
-- human_handoff (e.g. "connect me to an agent")
-- unknown (if confidence is low or it does not match the above)
+try:
+    with open(INTENT_PATH, "r", encoding="utf-8") as f:
+        INTENT_DATA = json.load(f)
+    
+    with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+        PROMPT_TEMPLATE = f.read()
 
-Supported sub-intents (only for order_issue):
-- replace_product (if the user wants to replace or exchange a damaged/incorrect product)
-- cancel_product (if the user wants to cancel a product or cancel an order)
-- product_recommendation (if the user asks for suggestions or product recommendations)
-- refund (if the user explicitly asks for a refund or money back, including for wrong orders)
+    # Dynamically build the lists of intents and sub_intents
+    intents_list = [info["description"] for info in INTENT_DATA["intents"].values()]
+    sub_intents_list = [info["description"] for info in INTENT_DATA["sub_intents"].values()]
 
-Examples:
-User: "hello"
-{{"intent": "greeting", "sub_intents": [], "confidence": 99, "language": "English"}}
+    intents_block = "\n".join(f"- {desc}" for desc in intents_list)
+    sub_intents_block = "\n".join(f"- {desc}" for desc in sub_intents_list)
 
-User: "my lotion arrived broken, I want to cancel it"
-{{"intent": "order_issue", "sub_intents": ["cancel_product"], "confidence": 95, "language": "English"}}
-
-User: "you delivered the wrong item, I need a refund"
-{{"intent": "order_issue", "sub_intents": ["refund"], "confidence": 95, "language": "English"}}
-"""
+    CLASSIFY_PROMPT = PROMPT_TEMPLATE.replace("{intents}", intents_block).replace("{sub_intents}", sub_intents_block)
+except Exception as e:
+    logger.error(f"Failed to load prompt/intent configuration: {e}")
+    CLASSIFY_PROMPT = ""
+    INTENT_DATA = {"intents": {}, "sub_intents": {}}
 
 def classify_node(state: AgentState) -> dict:
     llm = get_llm()
@@ -53,18 +53,16 @@ def classify_node(state: AgentState) -> dict:
         msg_lower = state["message"].lower()
         
         # Rule-based programmatic fallbacks to ensure robust sub_intent classification
-        if "replace" in msg_lower or "exchange" in msg_lower:
-            intent = "order_issue"
-            if "replace_product" not in sub_intents:
-                sub_intents.append("replace_product")
-        if "cancel" in msg_lower:
-            intent = "order_issue"
-            if "cancel_product" not in sub_intents:
-                sub_intents.append("cancel_product")
-        if "refund" in msg_lower:
-            intent = "order_issue"
-            if "refund" not in sub_intents:
-                sub_intents.append("refund")
+        for sub_intent_name, sub_intent_info in INTENT_DATA.get("sub_intents", {}).items():
+            fallback_keywords = sub_intent_info.get("fallback_keywords", [])
+            parent_intent = sub_intent_info.get("parent_intent")
+            
+            # Check if any fallback keyword is in the user message
+            if any(kw in msg_lower for kw in fallback_keywords):
+                if parent_intent:
+                    intent = parent_intent
+                if sub_intent_name not in sub_intents:
+                    sub_intents.append(sub_intent_name)
                 
         return {
             "intent": intent,
@@ -75,3 +73,4 @@ def classify_node(state: AgentState) -> dict:
     except Exception as e:
         logger.error(f"Classification node failed: {e}")
         return {"intent": "unknown", "sub_intents": [], "confidence": 0, "language": "English"}
+

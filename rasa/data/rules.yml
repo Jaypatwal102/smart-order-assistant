@@ -41,3 +41,21 @@ rules:
     steps:
       - intent: nlu_fallback
       - action: utter_out_of_scope
+
+  - rule: Interrupt form for human agent request
+    condition:
+      - active_loop: shipping_address_update_form
+    steps:
+      - intent: request_human
+      - action: action_deactivate_loop
+      - active_loop: null
+      - action: utter_human_handoff
+
+  - rule: Interrupt form for out of scope request
+    condition:
+      - active_loop: shipping_address_update_form
+    steps:
+      - intent: out_of_scope
+      - action: action_deactivate_loop
+      - active_loop: null
+      - action: utter_out_of_scope

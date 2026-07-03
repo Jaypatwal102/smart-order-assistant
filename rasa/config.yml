@@ -4,6 +4,8 @@ language: en
 pipeline:
   - name: WhitespaceTokenizer
 
+  # split sentences, featurizers (RegexFeaturizer, CountVectorsFeaturizer) to convert text to vectors
+
   - name: RegexFeaturizer
 
   - name: LexicalSyntacticFeaturizer
@@ -29,12 +31,6 @@ pipeline:
     ambiguity_threshold: 0.1
 
 policies:
-  - name: MemoizationPolicy
-
   - name: RulePolicy
-
-  - name: TEDPolicy
-    max_history: 5
-    epochs: 100
 
 assistant_id: shipping-address-chatbot

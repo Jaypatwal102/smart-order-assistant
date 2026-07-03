@@ -55,22 +55,29 @@ def _classify_message(message_text: str, cid: str = None, uid: str = None) -> di
         print(f"AI Service communication error: {e}")
     return {"intent": "unknown", "sub_intents": [], "confidence": 0}
 
-def _is_rasa_active(cid: str) -> bool:
+def _get_rasa_tracker_info(cid: str) -> tuple[bool, str]:
+    is_active = False
+    language = "English"
     try:
         tracker_url = f"{RASA_URL}/conversations/{cid}/tracker"
         res = requests.get(tracker_url, timeout=5)
         if res.status_code == 200:
             tracker = res.json()
             if tracker.get("active_loop", {}).get("name"):
-                return True
-            for event in reversed(tracker.get("events", [])):
-                if event.get("event") == "action" and event.get("name") != "action_listen":
-                    if event.get("name") in ["utter_confirm_update", "shipping_address_update_form"]:
-                        return True
-                    break
+                is_active = True
+            else:
+                for event in reversed(tracker.get("events", [])):
+                    if event.get("event") == "action" and event.get("name") != "action_listen":
+                        if event.get("name") in ["utter_confirm_update", "shipping_address_update_form"]:
+                            is_active = True
+                        break
+            
+            slots = tracker.get("slots", {})
+            if slots.get("language"):
+                language = slots.get("language")
     except Exception as e:
         print(f"Failed to fetch Rasa tracker: {e}")
-    return False
+    return is_active, language
 
 def _forward_message_to_rasa(cid: str, uid: str, message_text: str, db: Session, target_language: str = "English"):
     bot_responses = []
@@ -78,14 +85,10 @@ def _forward_message_to_rasa(cid: str, uid: str, message_text: str, db: Session,
     try:
         event_url = f"{RASA_URL}/conversations/{cid}/tracker/events"
         requests.post(event_url, json={"event": "slot", "name": "user_id", "value": str(uid)}, timeout=5)
+        requests.post(event_url, json={"event": "slot", "name": "language", "value": target_language}, timeout=5)
         
-        rasa_message = message_text
-        if target_language and target_language.lower() not in ["en", "english"]:
-            if not message_text.startswith("/"):
-                rasa_message = _translate_text(message_text, "English", source_language=target_language)
-                
         webhook_url = f"{RASA_URL}/webhooks/rest/webhook"
-        rasa_res = requests.post(webhook_url, json={"sender": str(cid), "message": rasa_message}, timeout=10)
+        rasa_res = requests.post(webhook_url, json={"sender": str(cid), "message": message_text}, timeout=10)
         
         if rasa_res.status_code == 200:
             bot_responses = rasa_res.json()
@@ -96,16 +99,15 @@ def _forward_message_to_rasa(cid: str, uid: str, message_text: str, db: Session,
         request_failed = True
 
     if request_failed:
-        fallback_text = _translate_text("I'm sorry, I am currently offline.", target_language)
+        fallback_text = "Je suis désolé, je suis actuellement hors ligne." if target_language.lower() == "french" else "I'm sorry, I am currently offline."
         db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=fallback_text))
     elif bot_responses:
         for resp in bot_responses:
             text_response = resp.get("text")
             if text_response:
-                translated_text = _translate_text(text_response, target_language)
-                db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=translated_text))
+                db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=text_response))
     else:
-        fallback_text = _translate_text("I'm sorry, I didn't quite catch that.", target_language)
+        fallback_text = "Je suis désolé, je n'ai pas bien compris." if target_language.lower() == "french" else "I'm sorry, I didn't quite catch that."
         db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=fallback_text))
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
@@ -146,14 +148,21 @@ def send_message(
     user_msg = Message(cid=uuid.UUID(cid), sender_type=SenderType.USER, message_text=msg_in.message_text)
     db.add(user_msg)
     
-    if _is_rasa_active(str(cid)):
-        _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db)
+    rasa_active, rasa_lang = _get_rasa_tracker_info(str(cid))
+    if rasa_active:
+        _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db, target_language=rasa_lang)
     else:
         classification = _classify_message(msg_in.message_text, str(cid), str(current_user.uid))
         intent = classification.get("intent")
+        detected_lang = classification.get("language", "English")
         
-        bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
-        db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
+        if intent == "shipping_address_update":
+            _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db, target_language=detected_lang)
+        else:
+            bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
+            if detected_lang.lower() not in ["en", "english"]:
+                bot_reply = _translate_text(bot_reply, detected_lang)
+            db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
         
     db.commit()
     
@@ -224,13 +233,21 @@ def send_audio(
     )
     db.add(user_msg)
     
-    if _is_rasa_active(str(cid)):
-        _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db)
+    rasa_active, rasa_lang = _get_rasa_tracker_info(str(cid))
+    if rasa_active:
+        _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db, target_language=rasa_lang)
     else:
         classification = _classify_message(transcribed_text, str(cid), str(current_user.uid))
         intent = classification.get("intent")
-        bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
-        db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
+        detected_lang = classification.get("language", "English")
+        
+        if intent == "shipping_address_update":
+            _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db, target_language=detected_lang)
+        else:
+            bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
+            if detected_lang.lower() not in ["en", "english"]:
+                bot_reply = _translate_text(bot_reply, detected_lang)
+            db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
         
     db.commit()
     
