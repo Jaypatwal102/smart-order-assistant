@@ -12,6 +12,37 @@ from langchain_core.output_parsers import JsonOutputParser
 
 logger = logging.getLogger(__name__)
 
+def fetch_enriched_order(order_id: str, uid: str) -> dict:
+    url = f"http://localhost:8000/orders/{order_id}"
+    resp = requests.get(url, timeout=5)
+    
+    if resp.status_code == 404:
+        return {"error": f"Sorry, no order was found with ID '{order_id}'. Please try again.", "order_data": None}
+    elif resp.status_code != 200:
+        return {"error": "Error validating your order. Please try again later.", "order_data": None}
+        
+    order_data = resp.json()
+    
+    if str(order_data.get("uid")).lower() != str(uid).lower():
+        return {"error": f"Sorry, order '{order_id}' is not associated with your account.", "intent": "completed", "order_data": None}
+        
+    pid = order_data.get("pid")
+    product_name = "Unknown Product"
+    if pid:
+        try:
+            prod_resp = requests.get(f"http://localhost:8000/products/{pid}", timeout=5)
+            if prod_resp.status_code == 200:
+                product_name = prod_resp.json().get("product_name", "Unknown Product")
+        except Exception as e:
+            logger.error(f"Error fetching product {pid}: {e}")
+            
+    order_data["product_name"] = product_name
+    order_data["status"] = order_data.get("order_status", "")
+    order_data["delivered_at"] = order_data.get("delivery_date")
+    order_data["ordered_at"] = order_data.get("delivery_date")
+    
+    return {"error": None, "order_data": order_data}
+
 EXTRACTION_PROMPT = """Extract any customer entities from the user message.
 Specifically look for:
 - order_id: A 36-character UUID string (e.g., '12345678-1234-1234-1234-123456789012')
@@ -126,24 +157,15 @@ def process_order_issue(state: AgentState) -> dict:
     if not order_id:
         return {"bot_response": "Please provide your exact order ID to proceed with your request."}
         
-    user_id = state.get("user_id")
-    if not user_id:
+    uid = state.get("uid")
+    if not uid:
         return {"order_id": order_id, "bot_response": "Session error: user ID is missing. Please log in again."}
         
     try:
-        url = f"http://localhost:8000/orders/{order_id}"
-        resp = requests.get(url, timeout=5)
-        
-        if resp.status_code == 404:
-            return {"order_id": None, "bot_response": f"Sorry, no order was found with ID '{order_id}'. Please try again."}
-        elif resp.status_code != 200:
-            return {"order_id": None, "bot_response": "Error validating your order. Please try again later."}
-            
-        order_data = resp.json()
-        
-        if str(order_data.get("user_id")).lower() != str(user_id).lower():
-            return {"order_id": None, "bot_response": f"Sorry, order '{order_id}' is not associated with your account.", "intent": "completed", "sub_intents": []}
-            
+        enrich_res = fetch_enriched_order(order_id, uid)
+        if enrich_res["error"]:
+            return {"order_id": None, "bot_response": enrich_res["error"], "intent": enrich_res.get("intent", "unknown"), "sub_intents": []}
+        order_data = enrich_res["order_data"]
         product_name = order_data.get("product_name")
         status = order_data.get("status", "")
         
@@ -286,24 +308,15 @@ def process_replacement(state: AgentState) -> dict:
     if not order_id:
         return {"bot_response": "Please provide your exact order ID to proceed with your replacement."}
         
-    user_id = state.get("user_id")
-    if not user_id:
+    uid = state.get("uid")
+    if not uid:
         return {"order_id": order_id, "bot_response": "Session error: user ID is missing. Please log in again."}
         
     try:
-        url = f"http://localhost:8000/orders/{order_id}"
-        resp = requests.get(url, timeout=5)
-        
-        if resp.status_code == 404:
-            return {"order_id": None, "bot_response": f"Sorry, no order was found with ID '{order_id}'. Please try again."}
-        elif resp.status_code != 200:
-            return {"order_id": None, "bot_response": "Error validating your order. Please try again later."}
-            
-        order_data = resp.json()
-        
-        if str(order_data.get("user_id")).lower() != str(user_id).lower():
-            return {"order_id": None, "bot_response": f"Sorry, order '{order_id}' is not associated with your account.", "intent": "completed", "sub_intents": []}
-            
+        enrich_res = fetch_enriched_order(order_id, uid)
+        if enrich_res["error"]:
+            return {"order_id": None, "bot_response": enrich_res["error"], "intent": enrich_res.get("intent", "unknown"), "sub_intents": []}
+        order_data = enrich_res["order_data"]
         product_name = order_data.get("product_name")
         status = order_data.get("status", "")
         
@@ -347,7 +360,7 @@ def process_replacement(state: AgentState) -> dict:
         if recs:
             alt_texts = []
             for r in recs:
-                r_name = r.get("name", "")
+                r_name = r.get("product_name", "")
                 if "hydrating face wash" in r_name.lower():
                     note = "Good for dry skin"
                 elif "aloe vera gel" in r_name.lower():
@@ -357,7 +370,7 @@ def process_replacement(state: AgentState) -> dict:
                 elif "sunscreen" in r_name.lower():
                     note = "Soothes and protects skin"
                 else:
-                    note = f"Popular in {r.get('category', 'skincare')}"
+                    note = f"Popular in {r.get('product_type', 'skincare')}"
                 alt_texts.append(f"{r_name} ({note})*")
             bot_msg += "\n".join(alt_texts)
         else:
@@ -368,8 +381,8 @@ def process_replacement(state: AgentState) -> dict:
             "bot_response": bot_msg,
             "replacement_offered": True,
             "recommended_products": recs or [
-                {"name": "Hydrating Face Wash", "category": "Cleanser"},
-                {"name": "Aloe Vera Gel", "category": "Gel"}
+                {"product_name": "Hydrating Face Wash", "product_type": "Cleanser"},
+                {"product_name": "Aloe Vera Gel", "product_type": "Gel"}
             ]
         }
     except Exception as e:
@@ -389,7 +402,7 @@ def process_refund(state: AgentState) -> dict:
         chosen_product = res.get("chosen_product")
         
         if decision == "accept_alternative":
-            prod = chosen_product or (recommended[0]["name"] if recommended else "alternative product")
+            prod = chosen_product or (recommended[0]["product_name"] if recommended else "alternative product")
             try:
                 replace_url = f"http://localhost:8000/orders/{order_id}/replace"
                 replace_resp = requests.post(replace_url, json={"replacement_product_name": prod}, timeout=5)
@@ -480,8 +493,8 @@ def process_refund(state: AgentState) -> dict:
             "refund_reason": refund_reason
         }
     
-    user_id = state.get("user_id")
-    if not user_id:
+    uid = state.get("uid")
+    if not uid:
         return {
             "order_id": order_id, 
             "bot_response": "Session error: user ID is missing. Please log in again.",
@@ -489,32 +502,16 @@ def process_refund(state: AgentState) -> dict:
         }
         
     try:
-        url = f"http://localhost:8000/orders/{order_id}"
-        resp = requests.get(url, timeout=5)
-        
-        if resp.status_code == 404:
+        enrich_res = fetch_enriched_order(order_id, uid)
+        if enrich_res["error"]:
             return {
                 "order_id": None, 
-                "bot_response": f"Sorry, no order was found with ID '{order_id}'. Please try again.",
-                "refund_reason": refund_reason
-            }
-        elif resp.status_code != 200:
-            return {
-                "order_id": None, 
-                "bot_response": "Error validating your order. Please try again later.",
-                "refund_reason": refund_reason
-            }
-            
-        order_data = resp.json()
-        
-        if str(order_data.get("user_id")).lower() != str(user_id).lower():
-            return {
-                "order_id": None, 
-                "bot_response": f"Sorry, order '{order_id}' is not associated with your account.", 
-                "intent": "completed", 
+                "bot_response": enrich_res["error"], 
+                "intent": enrich_res.get("intent", "unknown"), 
                 "sub_intents": [],
                 "refund_reason": refund_reason
             }
+        order_data = enrich_res["order_data"]
             
         # Read the refund policy
         policy_path = os.path.join(os.path.dirname(__file__), "..", "knowledge_base", "refund_policy.txt")

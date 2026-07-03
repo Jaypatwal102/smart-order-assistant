@@ -104,7 +104,7 @@ export default function SupportPage() {
 
   const loadConversation = async (conv: any) => {
     setActiveConversationId(conv.cid);
-    if (conv.status === 'handed_over') {
+    if (conv.status === 'HANDED_OVER' || conv.status === 'handed_over') {
       setIsHandedOver(true);
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         connectWebSocket(conv.cid);
@@ -152,13 +152,21 @@ export default function SupportPage() {
         };
       });
       setMessages(formattedMsgs);
+      
+      if (fullConv.status === 'HANDED_OVER' || fullConv.status === 'handed_over') {
+        setIsHandedOver(true);
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+          connectWebSocket(fullConv.cid);
+        }
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
   const connectWebSocket = (conversationId: string) => {
-    const wsUrl = `ws://localhost:8000/handoff/ws/user/${conversationId}`;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const wsUrl = apiUrl.replace(/^http/, 'ws') + `/handoff/ws/user/${conversationId}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -295,7 +303,7 @@ export default function SupportPage() {
       if (updatedConv.messages) {
         // Normal conversation update
         setActiveConversationId(updatedConv.cid);
-        if (updatedConv.status === 'handed_over') {
+        if (updatedConv.status === 'HANDED_OVER' || updatedConv.status === 'handed_over') {
            setIsHandedOver(true);
            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
              connectWebSocket(updatedConv.cid);
@@ -522,7 +530,7 @@ export default function SupportPage() {
             sendMessage(token, text, activeConversationId).then(updatedConv => {
               if (updatedConv.messages) {
                 setActiveConversationId(updatedConv.cid);
-                if (updatedConv.status === 'handed_over') {
+                if (updatedConv.status === 'HANDED_OVER' || updatedConv.status === 'handed_over') {
                    setIsHandedOver(true);
                    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
                      connectWebSocket(updatedConv.cid);

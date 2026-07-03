@@ -98,9 +98,9 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
             )
             return {"order_id": None}
             
-        user_id = tracker.get_slot("user_id")
+        uid = tracker.get_slot("uid")
 
-        if not user_id:
+        if not uid:
             dispatcher.utter_message(
                 text="Session error: Could not identify your user session. Please log in again."
             )
@@ -115,8 +115,8 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
                 order_data = response.json()
                 
                 # Check ownership: verify order.user_id matches current_user.user_id
-                order_user_uuid = str(order_data.get("user_id")).lower()
-                current_user_uuid = str(user_id).lower()
+                order_user_uuid = str(order_data.get("uid")).lower()
+                current_user_uuid = str(uid).lower()
                 
                 if order_user_uuid != current_user_uuid:
                     dispatcher.utter_message(
@@ -125,9 +125,9 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
                     return {"order_id": None}
                 
                 # Check order status constraints
-                status = order_data.get("status")
-                restricted_statuses = ["dispatched", "out for delivery", "delivered"]
-                if status in restricted_statuses:
+                status = order_data.get("order_status")
+                restricted_statuses = ["DISPATCHED", "DELIVERED"]
+                if status and status.upper() in restricted_statuses:
                     dispatcher.utter_message(
                         text=(
                             f"Sorry, the shipping address for order '{order_id}' "

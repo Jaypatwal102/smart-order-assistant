@@ -28,20 +28,20 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
         # Find the target product to get its category/description if available
         target_product = None
         for p in all_products:
-            if p["name"].lower() == product_name.lower():
+            if p["product_name"].lower() == product_name.lower():
                 target_product = p
                 break
 
         # Prepare search query
         if target_product:
-            search_query = f"Category: {target_product['category']}. Description: {target_product['description']}"
+            search_query = f"Category: {target_product['product_type']}. Description: {target_product['description']}"
         else:
             search_query = product_name
 
         # Filter out the current product from recommendations index
         index_products = [
             p for p in all_products
-            if p["name"].lower() != product_name.lower()
+            if p["product_name"].lower() != product_name.lower()
         ]
 
         if not index_products:
@@ -50,13 +50,13 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
         # Create documents
         docs = []
         for p in index_products:
-            doc_text = f"Product Name: {p['name']}. Category: {p['category']}. Description: {p['description']}"
+            doc_text = f"Product Name: {p['product_name']}. Category: {p['product_type']}. Description: {p['description']}"
             docs.append(Document(
                 page_content=doc_text,
                 metadata={
-                    "product_id": p["product_id"],
-                    "name": p["name"],
-                    "category": p["category"],
+                    "pid": p["pid"],
+                    "product_name": p["product_name"],
+                    "product_type": p["product_type"],
                     "price": p["price"]
                 }
             ))
@@ -73,9 +73,9 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
         recommendations = []
         for doc in results:
             recommendations.append({
-                "product_id": doc.metadata["product_id"],
-                "name": doc.metadata["name"],
-                "category": doc.metadata["category"],
+                "pid": doc.metadata["pid"],
+                "product_name": doc.metadata["product_name"],
+                "product_type": doc.metadata["product_type"],
                 "price": doc.metadata["price"]
             })
 

@@ -21,14 +21,16 @@ actions:
   - validate_shipping_address_update_form
 
 slots:
-  user_id:
+  uid:
     type: text
-    mappings: []
+    mappings:
+      - type: custom
 
   language:
     type: text
     influence_conversation: false
-    mappings: []
+    mappings:
+      - type: custom
 
   order_id:
     type: text

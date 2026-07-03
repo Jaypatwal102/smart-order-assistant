@@ -26,7 +26,7 @@ class RefundEvaluationResult(BaseModel):
 
 class AgentState(TypedDict):
     message: str
-    conversation_id: str
+    cid: str
     intent: str
     sub_intents: List[str]
     confidence: int
@@ -34,7 +34,7 @@ class AgentState(TypedDict):
     # Persistent entities managed across turns
     order_id: Optional[str]
     new_address: Optional[str]
-    user_id: Optional[str]
+    uid: Optional[str]
     refund_offered: Optional[bool]
     cancel_offered: Optional[bool]
     replacement_offered: Optional[bool]
