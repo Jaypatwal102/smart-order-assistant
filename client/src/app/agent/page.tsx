@@ -18,7 +18,7 @@ export default function AgentDashboard() {
   const [isConnected, setIsConnected] = useState(false);
   
   const [isChatEnded, setIsChatEnded] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
   const wsRef = useRef<WebSocket | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
@@ -84,7 +84,7 @@ export default function AgentDashboard() {
             }).then(res => res.json()).then(conv => {
               if (conv.messages) {
                 setMessages(conv.messages.map((m: any) => ({
-                  id: m.id,
+                  id: m.mid,
                   sender_type: m.sender_type,
                   message_text: m.message_text
                 })));

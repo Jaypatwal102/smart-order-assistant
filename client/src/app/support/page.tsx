@@ -70,7 +70,7 @@ export default function SupportPage() {
 
         const userData = await getCurrentUser(token);
         if (userData.role === 'HUMAN_AGENT') {
-          router.push('/agent/support');
+          router.push('/agent');
           return;
         }
         setUser(userData);
@@ -103,11 +103,11 @@ export default function SupportPage() {
   }, [user, messages.length, activeConversationId]);
 
   const loadConversation = async (conv: any) => {
-    setActiveConversationId(conv.id || conv.cid);
+    setActiveConversationId(conv.cid);
     if (conv.status === 'handed_over') {
       setIsHandedOver(true);
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        connectWebSocket(conv.id || conv.cid);
+        connectWebSocket(conv.cid);
       }
     } else {
       setIsHandedOver(false);
@@ -121,7 +121,7 @@ export default function SupportPage() {
       const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
       if (!token) return;
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/conversations/${conv.id || conv.cid}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/conversations/${conv.cid}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) return;
@@ -145,8 +145,8 @@ export default function SupportPage() {
           timeStr = new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
         return {
-          id: m.mid || m.id,
-          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
+          id: m.mid,
+          sender: m.sender_type?.toUpperCase() === 'BOT' || m.sender_type?.toUpperCase() === 'AI' ? 'ai' : (m.sender_type?.toUpperCase() === 'HUMAN_AGENT' ? 'human_agent' : 'user'),
           text: m.message_text,
           time: timeStr
         };
@@ -294,23 +294,23 @@ export default function SupportPage() {
       
       if (updatedConv.messages) {
         // Normal conversation update
-        setActiveConversationId(updatedConv.id);
+        setActiveConversationId(updatedConv.cid);
         if (updatedConv.status === 'handed_over') {
            setIsHandedOver(true);
            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-             connectWebSocket(updatedConv.id);
+             connectWebSocket(updatedConv.cid);
            }
         }
         const formattedMsgs = updatedConv.messages.map((m: any) => ({
-          id: m.id,
-          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : 'user',
+          id: m.mid,
+          sender: m.sender_type?.toUpperCase() === 'BOT' || m.sender_type?.toUpperCase() === 'AI' ? 'ai' : (m.sender_type?.toUpperCase() === 'HUMAN_AGENT' ? 'human_agent' : 'user'),
           text: m.message_text,
           time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
         }));
         setMessages(formattedMsgs);
 
         setAllConversations(prev => {
-          const index = prev.findIndex(c => c.id === updatedConv.id);
+          const index = prev.findIndex(c => c.cid === updatedConv.cid);
           if (index >= 0) {
             const newAll = [...prev];
             newAll[index] = updatedConv;
@@ -382,23 +382,23 @@ export default function SupportPage() {
       const updatedConv = await sendAudioMessage(token, audioBlob, activeConversationId);
       
       if (updatedConv.messages) {
-        setActiveConversationId(updatedConv.id);
+        setActiveConversationId(updatedConv.cid);
         if (updatedConv.status === 'handed_over') {
            setIsHandedOver(true);
            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-             connectWebSocket(updatedConv.id);
+             connectWebSocket(updatedConv.cid);
            }
         }
         const formattedMsgs = updatedConv.messages.map((m: any) => ({
-          id: m.id,
-          sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
+          id: m.mid,
+          sender: m.sender_type?.toUpperCase() === 'BOT' || m.sender_type?.toUpperCase() === 'AI' ? 'ai' : (m.sender_type?.toUpperCase() === 'HUMAN_AGENT' ? 'human_agent' : 'user'),
           text: m.message_text,
           time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
         }));
         setMessages(formattedMsgs);
 
         setAllConversations(prev => {
-          const index = prev.findIndex(c => c.id === updatedConv.id);
+          const index = prev.findIndex(c => c.cid === updatedConv.cid);
           if (index >= 0) {
             const newAll = [...prev];
             newAll[index] = updatedConv;
@@ -469,7 +469,7 @@ export default function SupportPage() {
             )}
             {allConversations.map(conv => {
               // Try to find the first user message for title, otherwise generic
-              const firstUserMsg = conv.messages?.find((m: any) => m.sender_type === 'user');
+              const firstUserMsg = conv.messages?.find((m: any) => m.sender_type?.toUpperCase() === 'USER' || m.sender_type === 'user');
               const title = firstUserMsg ? firstUserMsg.message_text.substring(0, 30) + (firstUserMsg.message_text.length > 30 ? '...' : '') : 'New Conversation';
               
               let timeStr = '';
@@ -482,9 +482,9 @@ export default function SupportPage() {
 
               return (
                 <div 
-                  key={conv.id} 
+                  key={conv.cid} 
                   className={styles.historyItem} 
-                  style={{ background: activeConversationId === conv.id ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                  style={{ background: activeConversationId === conv.cid ? 'rgba(255,255,255,0.05)' : 'transparent' }}
                   onClick={() => loadConversation(conv)}
                 >
                   <div className={styles.historyText}>
@@ -521,16 +521,16 @@ export default function SupportPage() {
             setIsTyping(true);
             sendMessage(token, text, activeConversationId).then(updatedConv => {
               if (updatedConv.messages) {
-                setActiveConversationId(updatedConv.id);
+                setActiveConversationId(updatedConv.cid);
                 if (updatedConv.status === 'handed_over') {
                    setIsHandedOver(true);
                    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-                     connectWebSocket(updatedConv.id);
+                     connectWebSocket(updatedConv.cid);
                    }
                 }
                 const formattedMsgs = updatedConv.messages.map((m: any) => ({
-                  id: m.id,
-                  sender: m.sender_type === 'bot' || m.sender_type === 'ai' ? 'ai' : (m.sender_type === 'human_agent' ? 'human_agent' : 'user'),
+                  id: m.mid,
+                  sender: m.sender_type?.toUpperCase() === 'BOT' || m.sender_type?.toUpperCase() === 'AI' ? 'ai' : (m.sender_type?.toUpperCase() === 'HUMAN_AGENT' ? 'human_agent' : 'user'),
                   text: m.message_text,
                   time: m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
                 }));

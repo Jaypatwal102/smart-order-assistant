@@ -39,7 +39,7 @@ def _translate_text(text: str, target_language: str, source_language: Optional[s
         print(f"AI Service translation error: {e}")
     return text
 
-def _classify_message(message_text: str, cid: str = None, uid: str = None) -> dict:
+def _classify_message(message_text: str, cid: str | None = None, uid: str | None = None) -> dict:
     try:
         payload = {"message": message_text, "conversation_id": cid}
         if uid:
@@ -139,7 +139,7 @@ def send_message(
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid cid format")
             
-        conv = db.query(Conversation).filter(Conversation.cid == conv_uuid).first()
+        conv = db.query(Conversation).filter(Conversation.cid == conv_uuid).first()  # type: ignore
         if not conv:
             raise HTTPException(status_code=404, detail="Conversation not found")
 
@@ -157,7 +157,7 @@ def send_message(
         
     db.commit()
     
-    conv = db.query(Conversation).options(joinedload(Conversation.messages)).filter(Conversation.cid == uuid.UUID(cid)).first()
+    conv = db.query(Conversation).options(joinedload(Conversation.messages)).filter(Conversation.cid == uuid.UUID(cid)).first()  # type: ignore
     
     msgs = []
     for m in conv.messages:
@@ -195,7 +195,7 @@ def send_audio(
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid cid format")
             
-        conv = db.query(Conversation).filter(Conversation.cid == conv_uuid).first()
+        conv = db.query(Conversation).filter(Conversation.cid == conv_uuid).first()  # type: ignore
         if not conv:
             raise HTTPException(status_code=404, detail="Conversation not found")
 
@@ -234,7 +234,7 @@ def send_audio(
         
     db.commit()
     
-    conv = db.query(Conversation).options(joinedload(Conversation.messages)).filter(Conversation.cid == uuid.UUID(cid)).first()
+    conv = db.query(Conversation).options(joinedload(Conversation.messages)).filter(Conversation.cid == uuid.UUID(cid)).first()  # type: ignore
     
     msgs = []
     for m in conv.messages:

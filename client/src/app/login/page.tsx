@@ -30,7 +30,7 @@ export default function LoginPage() {
       if (response.ok) {
         const userData = await response.json();
         if (userData.role === 'HUMAN_AGENT') {
-          router.push('/agent/support');
+          router.push('/agent');
         } else {
           router.push('/support');
         }
