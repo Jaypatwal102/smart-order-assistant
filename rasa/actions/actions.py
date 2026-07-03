@@ -37,8 +37,7 @@ class ActionSubmitShippingUpdate(Action):
             response = requests.put(url, json={"new_address": new_address}, timeout=5)
             if response.status_code == 200:
                 updated = True
-                api_response = response.json()
-                dispatcher.utter_message(text=api_response.get("message"))
+                dispatcher.utter_message(text=f"Successfully updated the shipping address for order {order_id} to '{new_address}'.")
             else:
                 error_msg = f"Server returned status code {response.status_code}."
         except requests.RequestException as e:
