@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.database.connection import SessionLocal
 from app.database.tables.users import User, UserRole
 from app.database.tables.orders import Order, OrderStatus
@@ -124,7 +124,7 @@ def seed():
             delivery_address="Pune, Maharashtra 411001",
             order_price=products["Ceramide Moisturizer"].price,
             order_status=OrderStatus.DELIVERED,
-            delivery_date=datetime(2026, 6, 22),
+            delivery_date=datetime.now() - timedelta(days=2),
         ),
         Order(
             uid=abhishek.uid,
@@ -172,7 +172,7 @@ def seed():
             delivery_address="Delhi 110001",
             order_price=products["Laptop Stand"].price,
             order_status=OrderStatus.DELIVERED,
-            delivery_date=datetime(2026, 5, 22),
+            delivery_date=datetime.now() - timedelta(days=15),
         ),
         Order(
             uid=abhishek.uid,

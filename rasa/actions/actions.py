@@ -129,8 +129,10 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
                     return {"order_id": None}
                 
                 # Check order status constraints
-                status = order_data.get("status")
-                restricted_statuses = ["dispatched", "out for delivery", "delivered"]
+                status = order_data.get("order_status")
+                if status:
+                    status = str(status).lower()
+                restricted_statuses = ["dispatched", "delivered"]
                 if status in restricted_statuses:
                     dispatcher.utter_message(
                         text=(

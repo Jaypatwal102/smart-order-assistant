@@ -14,9 +14,17 @@ from app.database.tables.audit_logs import AuditLog
 
 from app.database.scripts.seed_data import seed
 
+from sqlalchemy import text
+
 def reset_db():
     print("Dropping all tables...")
-    Base.metadata.drop_all(bind=engine)
+    with engine.connect() as conn:
+        if engine.dialect.name == "postgresql":
+            conn.execute(text("DROP SCHEMA public CASCADE;"))
+            conn.execute(text("CREATE SCHEMA public;"))
+            conn.commit()
+        else:
+            Base.metadata.drop_all(bind=engine)
 
     print("Creating all tables...")
     Base.metadata.create_all(bind=engine)

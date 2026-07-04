@@ -2,7 +2,7 @@ import uuid
 import enum
 from datetime import datetime
 from typing import TYPE_CHECKING
-from sqlalchemy import Text, DateTime, Enum, ForeignKey, Boolean, func, text
+from sqlalchemy import Text, DateTime, Enum, ForeignKey, Boolean, func, text, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.connection import Base, GUID
@@ -45,7 +45,7 @@ class AuditLog(Base):
     )
     action_type: Mapped[ActionType | None] = mapped_column(Enum(ActionType), nullable=True)
     details: Mapped[str | None] = mapped_column(Text, nullable=True)
-    human_handoff: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text("0"))
+    human_handoff: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,

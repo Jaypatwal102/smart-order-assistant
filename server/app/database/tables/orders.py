@@ -1,6 +1,6 @@
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 from sqlalchemy import Text, DateTime, Enum, Numeric, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -50,3 +50,24 @@ class Order(Base):
     audit_logs: Mapped[list["AuditLog"]] = relationship(
         back_populates="order", cascade="all, delete-orphan"
     )
+
+    @property
+    def user_id(self) -> uuid.UUID:
+        return self.uid
+
+    @property
+    def product_name(self) -> str | None:
+        return self.product.product_name if self.product else None
+
+    @property
+    def status(self) -> str | None:
+        return self.order_status.value if self.order_status else None
+
+    @property
+    def ordered_at(self) -> str | None:
+        ref_date = self.delivery_date or datetime.now()
+        return (ref_date - timedelta(days=5)).isoformat()
+
+    @property
+    def delivered_at(self) -> str | None:
+        return self.delivery_date.isoformat() if self.delivery_date else None

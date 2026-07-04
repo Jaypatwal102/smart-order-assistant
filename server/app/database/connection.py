@@ -31,7 +31,9 @@ class Base(DeclarativeBase):
 
 
 # SQLite-specific connection arguments
-connect_args = {"check_same_thread": False}
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
 
 engine = create_engine(
     DATABASE_URL,
