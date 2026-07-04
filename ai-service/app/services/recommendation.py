@@ -54,9 +54,9 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
             docs.append(Document(
                 page_content=doc_text,
                 metadata={
-                    "pid": p["pid"],
-                    "product_name": p["product_name"],
-                    "product_type": p["product_type"],
+                    "product_id": p["pid"],
+                    "name": p["product_name"],
+                    "category": p["product_type"],
                     "price": p["price"]
                 }
             ))
@@ -73,10 +73,10 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
         recommendations = []
         for doc in results:
             recommendations.append({
-                "pid": doc.metadata["pid"],
-                "product_name": doc.metadata["product_name"],
-                "product_type": doc.metadata["product_type"],
-                "price": doc.metadata["price"]
+                "product_id": str(doc.metadata["product_id"]),
+                "name": doc.metadata["name"],
+                "category": str(doc.metadata["category"]),
+                "price": float(doc.metadata["price"])
             })
 
         return recommendations

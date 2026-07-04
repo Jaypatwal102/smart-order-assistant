@@ -12,7 +12,9 @@ app = FastAPI(title="Intent Classification Service")
 
 class ChatRequest(BaseModel):
     message: str
+    conversation_id: Optional[str] = None
     cid: Optional[str] = None
+    user_id: Optional[str] = None
     uid: Optional[str] = None
 
 class ChatResponse(BaseModel):
@@ -37,15 +39,17 @@ class TranslateResponse(BaseModel):
 @app.post("/chat", response_model=ChatResponse)
 async def classify_intent(request: ChatRequest):
     try:
-        thread_id = request.cid or "default"
+        thread_id = request.conversation_id or request.cid or "default"
         config = {"configurable": {"thread_id": thread_id}}
+        
+        effective_user_id = request.user_id or request.uid
         
         # Invoke the graph with thread-based memory checkpointing
         result = await intent_classifier_graph.ainvoke(
             {
                 "message": request.message,
-                "cid": thread_id,
-                "uid": request.uid
+                "conversation_id": thread_id,
+                "user_id": effective_user_id
             },
             config=config
         )

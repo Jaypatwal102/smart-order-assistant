@@ -37,7 +37,12 @@ class ActionSubmitShippingUpdate(Action):
             response = requests.put(url, json={"new_address": new_address}, timeout=5)
             if response.status_code == 200:
                 updated = True
-                dispatcher.utter_message(text=f"Successfully updated the shipping address for order {order_id} to '{new_address}'.")
+                lang = tracker.get_slot("language") or "English"
+                if str(lang).lower() == "french":
+                    success_msg = f"Votre adresse de livraison a été mise à jour avec succès : {new_address}."
+                else:
+                    success_msg = f"Your shipping address has been successfully updated to: {new_address}."
+                dispatcher.utter_message(text=success_msg)
             else:
                 error_msg = f"Server returned status code {response.status_code}."
         except requests.RequestException as e:
@@ -113,7 +118,7 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
             if response.status_code == 200:
                 order_data = response.json()
                 
-                # Check ownership: verify order.user_id matches current_user.user_id
+                # Check ownership: verify order.uid matches current_user.uid
                 order_user_uuid = str(order_data.get("uid")).lower()
                 current_user_uuid = str(uid).lower()
                 
@@ -125,8 +130,10 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
                 
                 # Check order status constraints
                 status = order_data.get("order_status")
-                restricted_statuses = ["DISPATCHED", "DELIVERED"]
-                if status and status.upper() in restricted_statuses:
+                if status:
+                    status = str(status).lower()
+                restricted_statuses = ["dispatched", "delivered"]
+                if status in restricted_statuses:
                     dispatcher.utter_message(
                         text=(
                             f"Sorry, the shipping address for order '{order_id}' "
@@ -185,7 +192,42 @@ class ValidateShippingAddressUpdateForm(FormValidationAction):
             r"please\s+update\s+it\s+to|"
             r"deliver\s+it\s+to|"
             r"ship\s+it\s+to|"
-            r"send\s+it\s+to)\s*",
+            r"send\s+it\s+to|"
+            r"ma\s+nouvelle\s+adresse\s+de\s+livraison\s+est|"
+            r"mon\s+adresse\s+de\s+livraison\s+est|"
+            r"ma\s+nouvelle\s+adresse\s+est|"
+            r"mon\s+adresse\s+est|"
+            r"nouvelle\s+adresse\s+est|"
+            r"la\s+nouvelle\s+adresse\s+est|"
+            r"l'adresse\s+est|"
+            r"changez-la\s+en|"
+            r"changez\s+mon\s+adresse\s+en|"
+            r"changer\s+mon\s+adresse\s+pour|"
+            r"remplacez-la\s+par|"
+            r"remplacez\s+par|"
+            r"modifier\s+mon\s+adresse\s+par|"
+            r"modifier\s+mon\s+adresse\s+pour|"
+            r"modifiez-la\s+en|"
+            r"mettez-la\s+à\s+jour\s+en|"
+            r"mettre\s+à\s+jour\s+mon\s+adresse\s+en|"
+            r"mettre\s+à\s+jour\s+mon\s+adresse\s+de\s+livraison\s+à|"
+            r"mettre\s+à\s+jour\s+mon\s+adresse\s+à|"
+            r"veuillez\s+la\s+mettre\s+à\s+jour\s+vers|"
+            r"veuillez\s+mettre\s+à\s+jour\s+mon\s+adresse\s+à|"
+            r"veuillez\s+l'envoyer\s+à|"
+            r"livrez-le\s+à|"
+            r"envoyez-le\s+à|"
+            r"livrer\s+à|"
+            r"livrez\s+à|"
+            r"envoyez\s+mon\s+colis\s+à|"
+            r"livrer\s+mon\s+colis\s+à|"
+            r"livrez\s+mon\s+colis\s+à|"
+            r"cela\s+devrait\s+être|"
+            r"j'ai\s+déménagé\s+au|"
+            r"utilisez\s+cette\s+adresse|"
+            r"voici\s+ma\s+nouvelle\s+adresse|"
+            r"j'habite\s+au|"
+            r"livrez\s+le\s+tout\s+à)\s*",
             "",
             cleaned_address,
             flags=re.IGNORECASE,

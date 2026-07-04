@@ -16,6 +16,11 @@ class OrderCreate(OrderBase):
 
 class OrderResponse(OrderBase):
     order_id: uuid.UUID
+    user_id: uuid.UUID | None = None
+    product_name: str | None = None
+    status: str | None = None
+    ordered_at: str | None = None
+    delivered_at: str | None = None
 
     class Config:
         from_attributes = True

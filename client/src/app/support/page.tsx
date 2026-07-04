@@ -104,7 +104,7 @@ export default function SupportPage() {
 
   const loadConversation = async (conv: any) => {
     setActiveConversationId(conv.cid);
-    if (conv.status === 'HANDED_OVER' || conv.status === 'handed_over') {
+    if (conv.status?.toLowerCase() === 'handed_over') {
       setIsHandedOver(true);
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         connectWebSocket(conv.cid);
@@ -303,7 +303,7 @@ export default function SupportPage() {
       if (updatedConv.messages) {
         // Normal conversation update
         setActiveConversationId(updatedConv.cid);
-        if (updatedConv.status === 'HANDED_OVER' || updatedConv.status === 'handed_over') {
+        if (updatedConv.status?.toLowerCase() === 'handed_over') {
            setIsHandedOver(true);
            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
              connectWebSocket(updatedConv.cid);
@@ -391,7 +391,7 @@ export default function SupportPage() {
       
       if (updatedConv.messages) {
         setActiveConversationId(updatedConv.cid);
-        if (updatedConv.status === 'handed_over') {
+        if (updatedConv.status?.toLowerCase() === 'handed_over') {
            setIsHandedOver(true);
            if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
              connectWebSocket(updatedConv.cid);
@@ -530,7 +530,7 @@ export default function SupportPage() {
             sendMessage(token, text, activeConversationId).then(updatedConv => {
               if (updatedConv.messages) {
                 setActiveConversationId(updatedConv.cid);
-                if (updatedConv.status === 'HANDED_OVER' || updatedConv.status === 'handed_over') {
+                if (updatedConv.status?.toLowerCase() === 'handed_over') {
                    setIsHandedOver(true);
                    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
                      connectWebSocket(updatedConv.cid);
