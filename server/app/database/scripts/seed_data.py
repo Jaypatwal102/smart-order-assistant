@@ -1,5 +1,8 @@
+# Complete replacement for seed.py
+
 import uuid
 from datetime import datetime, timedelta
+
 from app.database.connection import SessionLocal
 from app.database.tables.users import User, UserRole
 from app.database.tables.orders import Order, OrderStatus
@@ -10,18 +13,16 @@ from app.utils.password import get_password_hash
 def seed():
     db = SessionLocal()
 
-    # Clear existing data
     db.query(Order).delete()
     db.query(User).delete()
     db.query(Product).delete()
     db.commit()
 
-    # Users
     abhishek = User(
         uid=uuid.uuid4(),
         first_name="Abhishek",
         last_name="Kumbhar",
-        email="kumbharabhishek2004@gmail.com",
+        email="user@gmail.com",
         hashed_password=get_password_hash("password123"),
         role=UserRole.USER,
     )
@@ -30,172 +31,105 @@ def seed():
         uid=uuid.uuid4(),
         first_name="Jelle",
         last_name="Vukth",
-        email="jellevanvukth303@gmail.com",
+        email="agent@gmail.com",
         hashed_password=get_password_hash("password123"),
         role=UserRole.HUMAN_AGENT,
     )
 
-    db.add(abhishek)
-    db.add(jelle)
+    db.add_all([abhishek, jelle])
     db.commit()
 
-    # Seed Products
+    def p(name, desc, t, price):
+        return Product(
+            pid=uuid.uuid4(),
+            product_name=name,
+            description=desc,
+            product_type=t,
+            price=price,
+        )
+
     products = {
-        "Ceramide Moisturizer": Product(
-            pid=uuid.uuid4(),
-            product_name="Ceramide Moisturizer",
-            description="Deeply hydrating cream with ceramides and hyaluronic acid to repair the skin barrier. Ideal for dry and sensitive skin.",
-            product_type=ProductType.COSMETIC,
-            price=899.00,
-        ),
-        "Vitamin C Serum": Product(
-            pid=uuid.uuid4(),
-            product_name="Vitamin C Serum",
-            description="Brightening serum with 10% pure Vitamin C and ferulic acid to fade dark spots and improve radiance.",
-            product_type=ProductType.COSMETIC,
-            price=1299.00,
-        ),
-        "Hydrating Face Wash": Product(
-            pid=uuid.uuid4(),
-            product_name="Hydrating Face Wash",
-            description="Gentle foaming face wash for dry to normal skin, free from sulfates and fragrance. Hydrates while cleansing.",
-            product_type=ProductType.COSMETIC,
-            price=599.00,
-        ),
-        "Wireless Earbuds": Product(
-            pid=uuid.uuid4(),
-            product_name="Wireless Earbuds",
-            description="True wireless earbuds with active noise cancellation and 24-hour battery life.",
-            product_type=ProductType.ELECTRONIC,
-            price=2999.00,
-        ),
-        "Smart Watch": Product(
-            pid=uuid.uuid4(),
-            product_name="Smart Watch",
-            description="Fitness tracker with heart rate monitor, sleep tracking, and built-in GPS.",
-            product_type=ProductType.ELECTRONIC,
-            price=4999.00,
-        ),
-        "Power Bank": Product(
-            pid=uuid.uuid4(),
-            product_name="Power Bank",
-            description="10000mAh portable charger with fast charging and dual USB ports.",
-            product_type=ProductType.ELECTRONIC,
-            price=999.00,
-        ),
-        "Laptop Stand": Product(
-            pid=uuid.uuid4(),
-            product_name="Laptop Stand",
-            description="Adjustable aluminum laptop stand for ergonomic viewing and typing.",
-            product_type=ProductType.ELECTRONIC,
-            price=1499.00,
-        ),
-        "Organic Honey": Product(
-            pid=uuid.uuid4(),
-            product_name="Organic Honey",
-            description="Pure, raw, unfiltered organic honey sourced from local farms.",
-            product_type=ProductType.FOOD,
-            price=399.00,
-        ),
-        "Green Tea": Product(
-            pid=uuid.uuid4(),
-            product_name="Green Tea",
-            description="Premium organic green tea leaves rich in antioxidants.",
-            product_type=ProductType.FOOD,
-            price=299.00,
-        ),
-        "Protein Bars": Product(
-            pid=uuid.uuid4(),
-            product_name="Protein Bars",
-            description="Pack of 6 protein bars with 20g protein and low sugar content.",
-            product_type=ProductType.FOOD,
-            price=799.00,
-        ),
+        # ---------------- COSMETICS (7) ----------------
+        "CeraVe Face Wash": p("CeraVe Hydrating Face Wash","Hydrating cleanser.",ProductType.COSMETIC,699),
+        "Cetaphil Face Wash": p("Cetaphil Gentle Skin Cleanser","Gentle cleanser.",ProductType.COSMETIC,649),
+        "Minimalist Face Wash": p("Minimalist Oat Cleanser","Daily cleanser.",ProductType.COSMETIC,599),
+        "Vitamin C Serum": p("Vitamin C Serum","Brightening serum.",ProductType.COSMETIC,1299),
+        "Ceramide Moisturizer": p("Ceramide Moisturizer","Barrier repair moisturizer.",ProductType.COSMETIC,899),
+        "Sunscreen SPF 50": p("Sunscreen SPF 50","Broad spectrum sunscreen.",ProductType.COSMETIC,799),
+        "Lip Balm": p("Lip Balm","Moisturizing lip balm.",ProductType.COSMETIC,249),
+
+        # ---------------- ELECTRONICS (7) ----------------
+        "Logitech Mouse": p("Logitech Wireless Mouse","2.4GHz wireless mouse.",ProductType.ELECTRONIC,999),
+        "HP Mouse": p("HP Wireless Mouse","Wireless optical mouse.",ProductType.ELECTRONIC,949),
+        "Dell Mouse": p("Dell Wireless Mouse","Compact wireless mouse.",ProductType.ELECTRONIC,979),
+        "Logitech Keyboard": p("Logitech Mechanical Keyboard","Mechanical keyboard.",ProductType.ELECTRONIC,3499),
+        "Amazon Washing Machine": p("Amazon Basics Washing Machine","Front load washing machine.",ProductType.ELECTRONIC,23999),
+        "Sony Earbuds": p("Sony Wireless Earbuds","Noise cancelling earbuds.",ProductType.ELECTRONIC,4999),
+        "Anker Power Bank": p("Anker Power Bank","20000mAh power bank.",ProductType.ELECTRONIC,1999),
+
+        # ---------------- FOOD (8) ----------------
+        "Dabur Honey": p("Dabur Honey","Pure honey.",ProductType.FOOD,399),
+        "Patanjali Honey": p("Patanjali Honey","Natural honey.",ProductType.FOOD,379),
+        "Organic India Honey": p("Organic India Honey","Organic honey.",ProductType.FOOD,449),
+        "Green Tea": p("Green Tea","Premium green tea.",ProductType.FOOD,299),
+        "Protein Bars": p("Protein Bars","Pack of 6 bars.",ProductType.FOOD,799),
+        "Basmati Rice": p("Basmati Rice 5kg","Premium rice.",ProductType.FOOD,699),
+        "Almonds": p("California Almonds","500g almonds.",ProductType.FOOD,849),
+        "Peanut Butter": p("Peanut Butter","Crunchy peanut butter.",ProductType.FOOD,349),
     }
 
     db.add_all(products.values())
     db.commit()
 
-    # 10 Orders with various statuses
+    now = datetime.now()
+
     orders = [
         Order(
             uid=abhishek.uid,
             pid=products["Ceramide Moisturizer"].pid,
-            delivery_address="Pune, Maharashtra 411001",
+            delivery_address="Pune, Maharashtra",
             order_price=products["Ceramide Moisturizer"].price,
             order_status=OrderStatus.DELIVERED,
-            delivery_date=datetime.now() - timedelta(days=2),
+            delivery_date=now - timedelta(days=1),
         ),
         Order(
             uid=abhishek.uid,
-            pid=products["Wireless Earbuds"].pid,
-            delivery_address="Mumbai, Maharashtra 400001",
-            order_price=products["Wireless Earbuds"].price,
-            order_status=OrderStatus.ORDERED,
-            delivery_date=None,
-        ),
-        Order(
-            uid=abhishek.uid,
-            pid=products["Organic Honey"].pid,
-            delivery_address="Nashik, Maharashtra 422003",
-            order_price=products["Organic Honey"].price,
-            order_status=OrderStatus.DISPATCHED,
-            delivery_date=None,
-        ),
-        Order(
-            uid=abhishek.uid,
-            pid=products["Smart Watch"].pid,
-            delivery_address="Bengaluru, Karnataka 560001",
-            order_price=products["Smart Watch"].price,
-            order_status=OrderStatus.ORDERED,
-            delivery_date=None,
-        ),
-        Order(
-            uid=abhishek.uid,
-            pid=products["Hydrating Face Wash"].pid,
-            delivery_address="Hyderabad, Telangana 500081",
-            order_price=products["Hydrating Face Wash"].price,
-            order_status=OrderStatus.REPLACED,
-            delivery_date=None,
-        ),
-        Order(
-            uid=abhishek.uid,
-            pid=products["Protein Bars"].pid,
-            delivery_address="Nagpur, Maharashtra 440001",
-            order_price=products["Protein Bars"].price,
-            order_status=OrderStatus.ORDERED,
-            delivery_date=None,
-        ),
-        Order(
-            uid=abhishek.uid,
-            pid=products["Laptop Stand"].pid,
-            delivery_address="Delhi 110001",
-            order_price=products["Laptop Stand"].price,
+            pid=products["Logitech Mouse"].pid,
+            delivery_address="Mumbai, Maharashtra",
+            order_price=products["Logitech Mouse"].price,
             order_status=OrderStatus.DELIVERED,
-            delivery_date=datetime.now() - timedelta(days=15),
+            delivery_date=now - timedelta(days=10),
         ),
         Order(
             uid=abhishek.uid,
-            pid=products["Green Tea"].pid,
-            delivery_address="Chennai, Tamil Nadu 600028",
-            order_price=products["Green Tea"].price,
+            pid=products["Sony Earbuds"].pid,
+            delivery_address="Bengaluru, Karnataka",
+            order_price=products["Sony Earbuds"].price,
             order_status=OrderStatus.ORDERED,
-            delivery_date=None,
+            delivery_date=now + timedelta(days=8),
         ),
         Order(
             uid=abhishek.uid,
-            pid=products["Power Bank"].pid,
-            delivery_address="Jaipur, Rajasthan 302001",
-            order_price=products["Power Bank"].price,
+            pid=products["Organic India Honey"].pid,
+            delivery_address="Hyderabad, Telangana",
+            order_price=products["Organic India Honey"].price,
+            order_status=OrderStatus.ORDERED,
+            delivery_date=now + timedelta(days=8),
+        ),
+        Order(
+            uid=abhishek.uid,
+            pid=products["HP Mouse"].pid,
+            delivery_address="Delhi",
+            order_price=products["HP Mouse"].price,
             order_status=OrderStatus.DISPATCHED,
-            delivery_date=None,
+            delivery_date=now + timedelta(days=4),
         ),
         Order(
             uid=abhishek.uid,
             pid=products["Vitamin C Serum"].pid,
-            delivery_address="Kochi, Kerala 682001",
+            delivery_address="Chennai, Tamil Nadu",
             order_price=products["Vitamin C Serum"].price,
-            order_status=OrderStatus.REPLACED,
+            order_status=OrderStatus.CANCELLED,
             delivery_date=None,
         ),
     ]
@@ -204,7 +138,6 @@ def seed():
     db.commit()
 
     print("Seed data inserted successfully.")
-
     db.close()
 
 

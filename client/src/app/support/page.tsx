@@ -167,7 +167,7 @@ export default function SupportPage() {
       if (data.type === 'agent_assigned') {
         setAgentId(data.agent_id);
       } else if (data.type === 'offer') {
-        await handleOffer(data.payload, data.agent_id);
+        await handleOffer(data.payload, data.agent_id, conversationId);
       } else if (data.type === 'ice-candidate') {
         if (peerConnectionRef.current) {
           await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.payload));
@@ -185,7 +185,7 @@ export default function SupportPage() {
     };
   };
 
-  const handleOffer = async (offer: RTCSessionDescriptionInit, agentId: string) => {
+  const handleOffer = async (offer: RTCSessionDescriptionInit, agentId: string, conversationId: string) => {
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
@@ -198,6 +198,16 @@ export default function SupportPage() {
           payload: event.candidate,
           agent_id: agentId
         }));
+      }
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'closed' || pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+        setIsConnectedToAgent(false);
+        setIsHandedOver(false);
+        setAllConversations(prev => prev.map(c => 
+          c.cid === conversationId ? { ...c, status: 'CLOSED' } : c
+        ));
       }
     };
 
@@ -221,6 +231,10 @@ export default function SupportPage() {
       
       channel.onclose = () => {
         setIsConnectedToAgent(false);
+        setIsHandedOver(false);
+        setAllConversations(prev => prev.map(c => 
+          c.cid === conversationId ? { ...c, status: 'CLOSED' } : c
+        ));
         setMessages(prev => [...prev, {
           id: Math.random().toString(),
           sender: 'ai', // treating system message as AI
@@ -439,6 +453,11 @@ export default function SupportPage() {
         <div className={styles.logo}>SOA</div>
         
         <button className={styles.newChatBtn} onClick={() => {
+          if (activeConversationId) {
+            setAllConversations(prev => prev.map(c => 
+              c.cid === activeConversationId ? { ...c, status: 'CLOSED' } : c
+            ));
+          }
           setActiveConversationId(null);
           setIsHandedOver(false);
           setIsConnectedToAgent(false);

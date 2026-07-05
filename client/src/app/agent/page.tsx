@@ -69,17 +69,17 @@ export default function AgentDashboard() {
       if (data.type === 'queue_update') {
         setQueueSize(data.queue_size);
       } else if (data.type === 'assigned') {
-        setCurrentConversation(data.conversation_id);
+        setCurrentConversation(data.cid);
         setIsConnected(true);
         setIsChatEnded(false);
-        setupWebRTC(data.conversation_id);
+        setupWebRTC(data.cid);
         
         // Fetch history
         const tokenMatch = document.cookie.match(/(^|;)\s*token\s*=\s*([^;]+)/);
         const token = tokenMatch ? tokenMatch[2] : null;
         if (token) {
           try {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/conversations/${data.conversation_id}`, {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/conversations/${data.cid}`, {
               headers: { Authorization: `Bearer ${token}` }
             }).then(res => res.json()).then(conv => {
               if (conv.messages) {
@@ -95,7 +95,7 @@ export default function AgentDashboard() {
           }
         }
       } else if (data.type === 'offer') {
-        await handleOffer(data.payload, data.conversation_id);
+        await handleOffer(data.payload, data.cid);
       } else if (data.type === 'answer') {
         if (peerConnectionRef.current) {
           await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.payload));
@@ -226,6 +226,7 @@ export default function AgentDashboard() {
       // Sync to DB via WS
       wsRef.current?.send(JSON.stringify({
         type: 'chat_message',
+        cid: currentConversation,
         conversation_id: currentConversation,
         message: msgText
       }));
@@ -233,6 +234,7 @@ export default function AgentDashboard() {
       // Fallback via WS directly if DataChannel isn't ready
       wsRef.current?.send(JSON.stringify({
         type: 'chat_message',
+        cid: currentConversation,
         conversation_id: currentConversation,
         message: msgText
       }));
