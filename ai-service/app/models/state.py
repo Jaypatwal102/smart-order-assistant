@@ -16,11 +16,19 @@ class ExtractionResult(BaseModel):
     order_id: Optional[str] = Field(None, description="A 36-character UUID/order ID if found in the user message.")
     new_address: Optional[str] = Field(None, description="A new shipping/delivery address if found in the user message.")
     refund_reason: Optional[str] = Field(None, description="The full, detailed reason the user wants a refund, retaining all specific details.")
+    replacement_reason: Optional[str] = Field(None, description="The reason the user wants a replacement, retaining all specific details.")
 
 class RefundEvaluationResult(BaseModel):
     product_match: bool = Field(description="true if user's claim matches actual product in order, false if absurd/fake")
     delivery_valid: bool = Field(description="true if status is 'delivered' with a valid date, false otherwise")
     eligible: bool = Field(description="true only if policy allows refund, product matches, delivery is valid, and within 7 days")
+    confidence: int = Field(description="confidence score between 0 and 100")
+    reason: str = Field(description="very concise reason explaining decision (under 200 characters)")
+
+class ReplacementEvaluationResult(BaseModel):
+    product_match: bool = Field(description="true if user's claim matches actual product in order, false if absurd/fake")
+    delivery_valid: bool = Field(description="true if status is 'delivered' with a valid date, false otherwise")
+    eligible: bool = Field(description="true only if policy allows replacement, product matches, delivery is valid, and within 7 days")
     confidence: int = Field(description="confidence score between 0 and 100")
     reason: str = Field(description="very concise reason explaining decision (under 200 characters)")
 
@@ -40,6 +48,7 @@ class AgentState(TypedDict):
     replacement_offered: Optional[bool]
     recommended_products: Optional[List[dict]]
     refund_reason: Optional[str]
+    replacement_reason: Optional[str]
     bot_response: Optional[str]
     handoff_required: Optional[bool]
     handoff_reason: Optional[str]

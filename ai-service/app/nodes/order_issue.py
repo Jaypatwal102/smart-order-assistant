@@ -6,7 +6,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from app.llm.ollama import get_llm
 from app.models.state import AgentState, ExtractionResult
-from app.nodes.helpers import classify_response_to_offer, EXTRACTION_PROMPT
+from app.nodes.helpers import classify_response_to_offer
+from app.prompts.extraction_prompt import EXTRACTION_PROMPT
 
 logger = logging.getLogger(__name__)
 

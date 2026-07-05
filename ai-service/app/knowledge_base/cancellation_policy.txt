@@ -1,0 +1,7 @@
+SMART ORDER ASSISTANT - CANCELLATION POLICY
+
+An order can only be cancelled before it has been dispatched.
+
+Eligibility:
+1. Orders in "ordered" status can be cancelled.
+2. No order with any other order status can be cancelled.
