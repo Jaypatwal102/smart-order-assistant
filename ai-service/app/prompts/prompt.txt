@@ -7,6 +7,10 @@ You need to multilingual support for languages English, French, Russian, Hindi.
 Supported sub-intents (only for order_issue):
 {sub_intents}
 
+CRITICAL RULES:
+1. If the user message is off-topic, asks for company documents/policies/info, or asks about anything other than customer order support (greetings, address updates, cancellations, replacements, refunds, or product recommendations), you MUST classify it as "unknown".
+2. Do NOT classify a message as "human_handoff" unless the user explicitly requests to talk to a human agent, connect to an agent, or talk to a real person.
+
 Examples:
 User: "hello"
 {{"intent": "greeting", "sub_intents": [], "confidence": 99, "language": "English"}}
@@ -16,3 +20,12 @@ User: "my lotion arrived broken, I want to cancel it"
 
 User: "you delivered the wrong item, I need a refund"
 {{"intent": "order_issue", "sub_intents": ["refund"], "confidence": 95, "language": "English"}}
+
+User: "can you provide me company docs"
+{{"intent": "unknown", "sub_intents": [], "confidence": 99, "language": "English"}}
+
+User: "what is your return policy"
+{{"intent": "unknown", "sub_intents": [], "confidence": 99, "language": "English"}}
+
+User: "Can you give me some money"
+{{"intent": "unknown", "sub_intents": [], "confidence": 99, "language": "English"}}

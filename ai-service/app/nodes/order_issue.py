@@ -97,6 +97,13 @@ def process_order_issue(state: AgentState) -> dict:
                 "intent": "completed",
                 "sub_intents": []
             }
+        elif status.lower() == "dispatched":
+            return {
+                "order_id": order_id,
+                "bot_response": f"Order '{order_id}' is already Dispatched.",
+                "intent": "completed",
+                "sub_intents": []
+            }
         elif status.lower() == "cancelled":
             return {
                 "order_id": order_id,
@@ -121,18 +128,32 @@ def process_order_issue(state: AgentState) -> dict:
             recs = get_recommendations_service(product_name, limit=2)
             
             bot_msg = f"Your order '{order_id}' for {product_name} has been successfully cancelled."
-            alt1 = recs[0]["name"] if recs else "Retinol Serum"
-            alt2 = recs[1]["name"] if len(recs) > 1 else "Ceramide Moisturizer"
-            bot_msg += f" If you are looking for an alternative, you might like our {alt1} or {alt2}. Would you like to check either of these out?"
+            if not recs:
+                bot_msg += " Sorry, we didn't find any matching products for alternative recommendations."
+                return {
+                    "order_id": order_id,
+                    "bot_response": bot_msg,
+                    "cancel_offered": False,
+                    "recommended_products": [],
+                    "intent": "completed",
+                    "sub_intents": []
+                }
+            
+            if len(recs) == 1:
+                alt1 = recs[0]["name"]
+                bot_msg += f" If you are looking for an alternative, you might like our {alt1}. Would you like to check it out?"
+            else:
+                alt1 = recs[0]["name"]
+                alt2 = recs[1]["name"]
+                bot_msg += f" If you are looking for an alternative, you might like our {alt1} or {alt2}. Would you like to check either of these out?"
             
             return {
                 "order_id": order_id,
                 "bot_response": bot_msg,
                 "cancel_offered": True,
-                "recommended_products": recs or [
-                    {"name": "Retinol Serum", "category": "Serum"},
-                    {"name": "Ceramide Moisturizer", "category": "Moisturizer"}
-                ]
+                "recommended_products": recs,
+                "intent": "completed",
+                "sub_intents": []
             }
         else:
             error_detail = cancel_resp.json().get("detail", "Unknown error")

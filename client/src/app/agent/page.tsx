@@ -193,6 +193,12 @@ export default function AgentDashboard() {
   };
 
   const endChat = () => {
+    if (wsRef.current && currentConversation) {
+      wsRef.current.send(JSON.stringify({
+        type: 'end_chat',
+        cid: currentConversation
+      }));
+    }
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;

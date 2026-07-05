@@ -127,8 +127,8 @@ async def agent_websocket(websocket: WebSocket, agent_id: str, db: Session = Dep
                     })
                     await manager.broadcast_to_agents({"type": "queue_update", "queue_size": len(manager.queue)})
 
-            elif message_data.get("type") in ["offer", "answer", "ice-candidate"]:
-                cid = message_data.get("cid")
+            elif message_data.get("type") in ["offer", "answer", "ice-candidate", "end_chat"]:
+                cid = message_data.get("cid") or message_data.get("conversation_id")
                 if cid:
                     await manager.send_to_user(cid, {
                         "type": message_data["type"],
@@ -136,7 +136,7 @@ async def agent_websocket(websocket: WebSocket, agent_id: str, db: Session = Dep
                         "agent_id": agent_id
                     })
             elif message_data.get("type") == "chat_message":
-                cid = message_data.get("cid")
+                cid = message_data.get("cid") or message_data.get("conversation_id")
                 if cid:
                     db_msg = Message(
                         cid=uuid.UUID(cid),

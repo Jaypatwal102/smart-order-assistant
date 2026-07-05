@@ -283,19 +283,31 @@ Only output the JSON.
             from app.services.recommendation import get_recommendations_service
             recs = get_recommendations_service(order_data.get('product_name'), limit=2)
             
-            alt1 = recs[0]["name"] if recs else "Daily Cleanser"
-            alt2 = recs[1]["name"] if len(recs) > 1 else "Sunscreen SPF 50"
+            if not recs:
+                bot_msg = f"I can see you're eligible for a refund on the {order_data.get('product_name')}. Sorry, we didn't find any matching products for an exchange. I am transferring you to a human agent now to process your refund."
+                return {
+                    "order_id": order_id,
+                    "bot_response": bot_msg,
+                    "handoff_required": True,
+                    "handoff_reason": "No matching exchange products found for eligible refund",
+                    "refund_offered": False,
+                    "recommended_products": [],
+                    "refund_reason": refund_reason
+                }
             
-            bot_msg = f"I can see you're eligible for a refund on the {order_data.get('product_name')}. Before I process it, would you be interested in exchanging it for our {alt1} or {alt2} instead? If you still prefer a refund, just say 'Refund' and I will process it immediately."
+            if len(recs) == 1:
+                alt1 = recs[0]["name"]
+                bot_msg = f"I can see you're eligible for a refund on the {order_data.get('product_name')}. Before I process it, would you be interested in exchanging it for our {alt1} instead? If you still prefer a refund, just say 'Refund' and I will process it immediately."
+            else:
+                alt1 = recs[0]["name"]
+                alt2 = recs[1]["name"]
+                bot_msg = f"I can see you're eligible for a refund on the {order_data.get('product_name')}. Before I process it, would you be interested in exchanging it for our {alt1} or {alt2} instead? If you still prefer a refund, just say 'Refund' and I will process it immediately."
             
             return {
                 "order_id": order_id,
                 "bot_response": bot_msg,
                 "refund_offered": True,
-                "recommended_products": recs or [
-                    {"name": "Daily Cleanser", "category": "Cleanser"},
-                    {"name": "Sunscreen SPF 50", "category": "Sunscreen"}
-                ],
+                "recommended_products": recs,
                 "refund_reason": refund_reason
             }
         else:

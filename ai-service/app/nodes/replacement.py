@@ -64,7 +64,10 @@ def process_replacement(state: AgentState) -> dict:
                 "sub_intents": []
             }
         else:
-            bot_msg = "I didn't catch that. Would you like me to process a replacement for the same item, or would you prefer one of the alternatives?"
+            if recommended:
+                bot_msg = "I didn't catch that. Would you like me to process a replacement for the same item, or would you prefer one of the alternatives?"
+            else:
+                bot_msg = "I didn't catch that. Would you like me to process a replacement for the same item?"
             return {"bot_response": bot_msg}
 
     # 2. Extract and validate Order ID
@@ -147,10 +150,8 @@ def process_replacement(state: AgentState) -> dict:
         from app.services.recommendation import get_recommendations_service
         recs = get_recommendations_service(product_name, limit=2)
         
-        bot_msg = f"I can help you replace your {product_name}. Would you like me to process a replacement for the same item, or would you prefer to try one of these alternatives instead?\n\n"
-        
-        # Helper to format alternatives with notes
         if recs:
+            bot_msg = f"I can help you replace your {product_name}. Would you like me to process a replacement for the same item, or would you prefer to try one of these alternatives instead?\n\n"
             alt_texts = []
             for r in recs:
                 r_name = r.get("name", "")
@@ -167,16 +168,13 @@ def process_replacement(state: AgentState) -> dict:
                 alt_texts.append(f"{r_name} ({note})*")
             bot_msg += "\n".join(alt_texts)
         else:
-            bot_msg += "Hydrating Face Wash (Good for dry skin)*\nAloe Vera Gel (Soothes sensitive skin)*"
+            bot_msg = f"I can help you replace your {product_name}. We did not find any matching alternative products. Would you like me to process a replacement for the same item?"
             
         return {
             "order_id": order_id,
             "bot_response": bot_msg,
             "replacement_offered": True,
-            "recommended_products": recs or [
-                {"name": "Hydrating Face Wash", "category": "Cleanser"},
-                {"name": "Aloe Vera Gel", "category": "Gel"}
-            ]
+            "recommended_products": recs
         }
     except Exception as e:
         logger.error(f"Replacement initialization error: {e}")

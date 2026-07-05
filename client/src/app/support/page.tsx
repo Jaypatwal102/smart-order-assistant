@@ -181,6 +181,24 @@ export default function SupportPage() {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }]);
         }
+      } else if (data.type === 'end_chat') {
+        setIsConnectedToAgent(false);
+        setIsHandedOver(false);
+        setAgentId(null);
+        setAllConversations(prev => prev.map(c => 
+          c.cid === conversationId ? { ...c, status: 'CLOSED' } : c
+        ));
+        if (wsRef.current) wsRef.current.close();
+        if (peerConnectionRef.current) peerConnectionRef.current.close();
+        wsRef.current = null;
+        peerConnectionRef.current = null;
+        dataChannelRef.current = null;
+        setMessages(prev => [...prev, {
+          id: Math.random().toString(),
+          sender: 'ai',
+          text: 'The agent has ended the chat.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
       }
     };
   };

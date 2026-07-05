@@ -32,20 +32,27 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
                 target_product = p
                 break
 
-        # Prepare search query
-        if target_product:
-            search_query = f"Category: {target_product['product_type']}. Description: {target_product['description']}"
-        else:
-            search_query = product_name
-
         # Filter out the current product from recommendations index
         index_products = [
             p for p in all_products
             if p["product_name"].lower() != product_name.lower()
         ]
 
+        # Enforce strict category match
+        if target_product:
+            index_products = [
+                p for p in index_products
+                if p["product_type"] == target_product["product_type"]
+            ]
+
         if not index_products:
             return []
+
+        # Prepare search query
+        if target_product:
+            search_query = f"Category: {target_product['product_type']}. Description: {target_product['description']}"
+        else:
+            search_query = product_name
 
         # Create documents
         docs = []
@@ -66,18 +73,19 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
         vector_store = InMemoryVectorStore(embeddings)
         vector_store.add_documents(docs)
 
-        # Perform similarity search
-        results = vector_store.similarity_search(search_query, k=limit)
+        # Perform similarity search with score
+        results_with_score = vector_store.similarity_search_with_score(search_query, k=limit)
 
-        # Format output
+        # Format output and filter by threshold >= 0.75
         recommendations = []
-        for doc in results:
-            recommendations.append({
-                "product_id": str(doc.metadata["product_id"]),
-                "name": doc.metadata["name"],
-                "category": str(doc.metadata["category"]),
-                "price": float(doc.metadata["price"])
-            })
+        for doc, score in results_with_score:
+            if score >= 0.75:
+                recommendations.append({
+                    "product_id": str(doc.metadata["product_id"]),
+                    "name": doc.metadata["name"],
+                    "category": str(doc.metadata["category"]),
+                    "price": float(doc.metadata["price"])
+                })
 
         return recommendations
 
