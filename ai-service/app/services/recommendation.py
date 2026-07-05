@@ -77,17 +77,50 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
         # Perform similarity search with score
         results_with_score = vector_store.similarity_search_with_score(search_query, k=limit)
 
-        # Format output and filter by threshold >= 0.75
+        # Format output and filter by threshold >= 0.75 and LLM semantic match
+        from pydantic import BaseModel, Field
+        from langchain_core.prompts import ChatPromptTemplate
+        from langchain_core.output_parsers import JsonOutputParser
+        from app.llm.ollama import get_llm
+        from app.prompts.recommendation_filter_prompt import RECOMMENDATION_FILTER_PROMPT
+
+        class RecommendationFilterResult(BaseModel):
+            reasonable: bool = Field(description="true if alternative product is a reasonable/logical replacement/exchange of same product type, false otherwise")
+
         recommendations = []
+        llm = None
+        parser = None
+        
         for doc, score in results_with_score:
             if score >= 0.75:
-                recommendations.append({
-                    "product_id": str(doc.metadata["product_id"]),
-                    "name": doc.metadata["name"],
-                    "category": str(doc.metadata["category"]),
-                    "price": float(doc.metadata["price"]),
-                    "description": doc.metadata.get("description", "")
-                })
+                candidate_name = doc.metadata["name"]
+                try:
+                    if llm is None:
+                        llm = get_llm()
+                        parser = JsonOutputParser(pydantic_object=RecommendationFilterResult)
+                    
+                    filter_prompt = ChatPromptTemplate.from_messages([
+                        ("system", RECOMMENDATION_FILTER_PROMPT + "\n\n{format_instructions}")
+                    ])
+                    chain = filter_prompt | llm | parser
+                    res = chain.invoke({
+                        "original_product": product_name,
+                        "alternative_product": candidate_name,
+                        "format_instructions": parser.get_format_instructions()
+                    })
+                    
+                    if res.get("reasonable", False):
+                        recommendations.append({
+                            "product_id": str(doc.metadata["product_id"]),
+                            "name": doc.metadata["name"],
+                            "category": str(doc.metadata["category"]),
+                            "price": float(doc.metadata["price"]),
+                            "description": doc.metadata.get("description", "")
+                        })
+                    else:
+                        logger.info(f"Filtered out recommendation '{candidate_name}' for original product '{product_name}' by LLM filter.")
+                except Exception as eval_err:
+                    logger.error(f"Recommendation LLM filter failed for '{candidate_name}': {eval_err}")
 
         return recommendations
 
