@@ -79,7 +79,7 @@ def _get_rasa_tracker_info(cid: str) -> tuple[bool, str]:
         print(f"Failed to fetch Rasa tracker: {e}")
     return is_active, language
 
-def _forward_message_to_rasa(cid: str, uid: str, message_text: str, db: Session, target_language: str = "English"):
+def _forward_message_to_rasa(cid: str, uid: str, message_text: str, db: Session, target_language: str = "English", start_time: float = 0):
     bot_responses = []
     request_failed = False
     try:
@@ -98,17 +98,25 @@ def _forward_message_to_rasa(cid: str, uid: str, message_text: str, db: Session,
         print(f"Rasa integration communication error: {e}")
         request_failed = True
 
+    import time
+    latency_ms = int((time.time() - start_time) * 1000) if start_time > 0 else 0
+    estimated_tokens = max(1, len(message_text) // 4)
+    token_cost = estimated_tokens * 0.00001
+    perf_str = f"\n\n[Performance] Latency: {latency_ms}ms | Token Cost: ${token_cost:.6f}"
+
     if request_failed:
         fallback_text = "Je suis désolé, je suis actuellement hors ligne." if target_language.lower() == "french" else "I'm sorry, I am currently offline."
-        db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=fallback_text))
+        db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=fallback_text + perf_str))
     elif bot_responses:
-        for resp in bot_responses:
+        for i, resp in enumerate(bot_responses):
             text_response = resp.get("text")
             if text_response:
+                if i == len(bot_responses) - 1:
+                    text_response += perf_str
                 db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=text_response))
     else:
         fallback_text = "Je suis désolé, je n'ai pas bien compris." if target_language.lower() == "french" else "I'm sorry, I didn't quite catch that."
-        db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=fallback_text))
+        db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=fallback_text + perf_str))
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
@@ -129,6 +137,8 @@ def send_message(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    import time
+    start_time = time.time()
     cid = msg_in.cid
     if not cid:
         conv = Conversation(uid=current_user.uid, status=ConversationStatus.ACTIVE)
@@ -150,7 +160,7 @@ def send_message(
     
     rasa_active, rasa_lang = _get_rasa_tracker_info(str(cid))
     if rasa_active:
-        _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db, target_language=rasa_lang)
+        _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db, target_language=rasa_lang, start_time=start_time)
     else:
         classification = _classify_message(msg_in.message_text, str(cid), str(current_user.uid))
         intent = classification.get("intent")
@@ -164,7 +174,7 @@ def send_message(
             conv.status = ConversationStatus.HANDED_OVER
         
         if intent == "shipping_address_update":
-            _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db, target_language=detected_lang)
+            _forward_message_to_rasa(str(cid), str(current_user.uid), msg_in.message_text, db, target_language=detected_lang, start_time=start_time)
         else:
             bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
             if detected_lang.lower() not in ["en", "english"]:
@@ -175,6 +185,11 @@ def send_message(
             sub_intents = classification.get("sub_intents", [])
             sub_intents_str = ", ".join(sub_intents) if sub_intents else "None"
             bot_reply += f"\n\n[Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {confidence}% | Lang: {detected_lang}"
+            
+            latency_ms = int((time.time() - start_time) * 1000)
+            estimated_tokens = max(1, len(msg_in.message_text) // 4)
+            token_cost = estimated_tokens * 0.00001
+            bot_reply += f"\n\n[Performance] Latency: {latency_ms}ms | Token Cost: ${token_cost:.6f}"
             
             db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
         
@@ -209,6 +224,8 @@ def send_audio(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    import time
+    start_time = time.time()
     if not cid or cid == "null":
         conv = Conversation(uid=current_user.uid, status=ConversationStatus.ACTIVE)
         db.add(conv)
@@ -251,7 +268,7 @@ def send_audio(
     
     rasa_active, rasa_lang = _get_rasa_tracker_info(str(cid))
     if rasa_active:
-        _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db, target_language=rasa_lang)
+        _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db, target_language=rasa_lang, start_time=start_time)
     else:
         classification = _classify_message(transcribed_text, str(cid), str(current_user.uid))
         intent = classification.get("intent")
@@ -262,7 +279,7 @@ def send_audio(
             conv.status = ConversationStatus.HANDED_OVER
         
         if intent == "shipping_address_update":
-            _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db, target_language=detected_lang)
+            _forward_message_to_rasa(str(cid), str(current_user.uid), transcribed_text, db, target_language=detected_lang, start_time=start_time)
         else:
             bot_reply = classification.get("bot_response") or f"Acknowledged intent: {intent}"
             if detected_lang.lower() not in ["en", "english"]:
@@ -273,6 +290,11 @@ def send_audio(
             sub_intents = classification.get("sub_intents", [])
             sub_intents_str = ", ".join(sub_intents) if sub_intents else "None"
             bot_reply += f"\n\n[Debug] Intent: {intent} | Sub-intents: {sub_intents_str} | Confidence: {confidence}% | Lang: {detected_lang}"
+            
+            latency_ms = int((time.time() - start_time) * 1000)
+            estimated_tokens = max(1, len(transcribed_text) // 4)
+            token_cost = estimated_tokens * 0.00001
+            bot_reply += f"\n\n[Performance] Latency: {latency_ms}ms | Token Cost: ${token_cost:.6f}"
             
             db.add(Message(cid=uuid.UUID(cid), sender_type=SenderType.BOT, message_text=bot_reply))
         

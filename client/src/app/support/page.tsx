@@ -229,6 +229,7 @@ export default function SupportPage() {
       
       channel.onclose = () => {
         setIsConnectedToAgent(false);
+        setIsHandedOver(false);
         setMessages(prev => [...prev, {
           id: Math.random().toString(),
           sender: 'ai', // treating system message as AI
