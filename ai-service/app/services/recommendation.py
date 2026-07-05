@@ -64,7 +64,8 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
                     "product_id": p["pid"],
                     "name": p["product_name"],
                     "category": p["product_type"],
-                    "price": p["price"]
+                    "price": p["price"],
+                    "description": p.get("description", "")
                 }
             ))
 
@@ -84,7 +85,8 @@ def get_recommendations_service(product_name: str, limit: int = 2) -> List[Dict[
                     "product_id": str(doc.metadata["product_id"]),
                     "name": doc.metadata["name"],
                     "category": str(doc.metadata["category"]),
-                    "price": float(doc.metadata["price"])
+                    "price": float(doc.metadata["price"]),
+                    "description": doc.metadata.get("description", "")
                 })
 
         return recommendations

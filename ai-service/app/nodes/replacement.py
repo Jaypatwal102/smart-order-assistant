@@ -212,15 +212,8 @@ def process_replacement(state: AgentState) -> dict:
             alt_texts = []
             for r in recs:
                 r_name = r.get("name", "")
-                if "hydrating face wash" in r_name.lower():
-                    note = "Good for dry skin"
-                elif "aloe vera gel" in r_name.lower():
-                    note = "Soothes sensitive skin"
-                elif "daily cleanser" in r_name.lower():
-                    note = "Gentle daily wash"
-                elif "sunscreen" in r_name.lower():
-                    note = "Soothes and protects skin"
-                else:
+                note = r.get("description")
+                if not note:
                     note = f"Popular in {r.get('category', 'skincare')}"
                 alt_texts.append(f"{r_name} ({note})*")
             bot_msg += "\n".join(alt_texts)
