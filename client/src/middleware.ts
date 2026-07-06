@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register');
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard') || request.nextUrl.pathname.startsWith('/support');
+  const isProtectedRoute = request.nextUrl.pathname.startsWith('/support');
 
   if (isProtectedRoute && !token) {
     return NextResponse.redirect(new URL('/login', request.url));
@@ -18,5 +18,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/login', '/register', '/dashboard/:path*', '/support/:path*'],
+  matcher: ['/login', '/register', '/support/:path*'],
 };

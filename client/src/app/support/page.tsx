@@ -52,6 +52,7 @@ export default function SupportPage() {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // here we safely close any existing connections before component unmounts
   useEffect(() => {
     return () => {
       if (wsRef.current) wsRef.current.close();
@@ -59,6 +60,7 @@ export default function SupportPage() {
     };
   }, []);
 
+  // if user token expired, log them out, and role based routing to agent/user page
   useEffect(() => {
     async function loadUser() {
       try {
@@ -89,6 +91,7 @@ export default function SupportPage() {
     loadUser();
   }, [router]);
 
+  // display the starting message, if new conversation
   useEffect(() => {
     if (user && messages.length === 0 && !activeConversationId) {
       setMessages([
@@ -102,6 +105,9 @@ export default function SupportPage() {
     }
   }, [user, messages.length, activeConversationId]);
 
+  
+  // load previous conversations for our user, based on if human handoff occured or not, and close connectedToAgent bool to false
+  // and format the msgs
   const loadConversation = async (conv: any) => {
     setActiveConversationId(conv.cid);
     if (conv.status?.toLowerCase() === 'handed_over') {
@@ -126,6 +132,8 @@ export default function SupportPage() {
       });
       if (!res.ok) return;
       const fullConv = await res.json();
+
+      //if this loaded convo has zero messages, we show our default message
 
       if (!fullConv.messages || fullConv.messages.length === 0) {
         setMessages([
@@ -157,6 +165,8 @@ export default function SupportPage() {
     }
   };
 
+  // creating a real time websocket connection between user and agent in case of human handoff
+  // handling the messages between them  
   const connectWebSocket = (conversationId: string) => {
     const wsUrl = `ws://localhost:8000/handoff/ws/user/${conversationId}`;
     const ws = new WebSocket(wsUrl);
@@ -193,6 +203,8 @@ export default function SupportPage() {
         wsRef.current = null;
         peerConnectionRef.current = null;
         dataChannelRef.current = null;
+        //changehere
+        setIsHandedOver(false);
         setMessages(prev => [...prev, {
           id: Math.random().toString(),
           sender: 'ai',
@@ -203,6 +215,7 @@ export default function SupportPage() {
     };
   };
 
+  // handling the websocket offers on user side
   const handleOffer = async (offer: RTCSessionDescriptionInit, agentId: string, conversationId: string) => {
     const pc = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
@@ -253,12 +266,6 @@ export default function SupportPage() {
         setAllConversations(prev => prev.map(c => 
           c.cid === conversationId ? { ...c, status: 'CLOSED' } : c
         ));
-        setMessages(prev => [...prev, {
-          id: Math.random().toString(),
-          sender: 'ai', // treating system message as AI
-          text: 'The agent has ended the chat.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }]);
       };
     };
 
@@ -283,7 +290,7 @@ export default function SupportPage() {
       </div>
     );
   }
-
+  // handle sending and incoming messages
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 

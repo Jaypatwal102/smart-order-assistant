@@ -10,7 +10,7 @@ class ClassificationResult(BaseModel):
         description="Sub-intents. Only populated for order_issue: replace_product, cancel_product, product_recommendation."
     )
     confidence: int = Field(description="Confidence score between 0 and 100.")
-    language: str = Field(default="English", description="Detected language (e.g. English, French, Russian, Hindi).")
+    language: str = Field(default="English", description="Detected language (e.g. English, French).")
 
 class ExtractionResult(BaseModel):
     order_id: Optional[str] = Field(None, description="A 36-character UUID/order ID if found in the user message.")

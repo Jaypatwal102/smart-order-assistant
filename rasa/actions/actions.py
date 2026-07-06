@@ -9,7 +9,7 @@ from rasa_sdk.executor import CollectingDispatcher
 
 FASTAPI_URL = os.getenv("FASTAPI_URL") or "http://localhost:8000"
 
-
+#updating the actual shipping address, when we have order_id and shipping address
 class ActionSubmitShippingUpdate(Action):
     def name(self) -> str:
         return "action_submit_shipping_update"
